@@ -1,0 +1,10 @@
+node_modules
+dist
+.tmp-assets
+.tmp-asset-update
+.tmp-font
+.tmp-reference
+verification
+*.tsbuildinfo
+.env*
+.DS_Store

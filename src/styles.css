@@ -1,0 +1,409 @@
+@font-face {
+  font-family: "Renogare";
+  src: url("/fonts/renogare-regular.otf") format("opentype");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 400;
+}
+
+:root {
+  color-scheme: dark;
+  font-family:
+    Renogare, Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  background: #111318;
+  font-synthesis: none;
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  min-width: 320px;
+  overflow: hidden;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.landing-shell {
+  --wallpaper-image: url("/assets/background-960.png");
+
+  position: relative;
+  display: grid;
+  min-height: 100dvh;
+  place-items: center;
+  overflow: hidden;
+  padding: clamp(1rem, 4vw, 3rem);
+  background:
+    var(--wallpaper-image) center / cover no-repeat,
+    #111318;
+}
+
+.landing-shell::before {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.01) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.01) 1px, transparent 1px);
+  background-size: 58px 58px;
+  mask-image: radial-gradient(circle at center, black, transparent 76%);
+}
+
+.orbit-stage {
+  --orbit-size: clamp(36rem, 94vmin, 66rem);
+  --icon-size: clamp(7rem, 15vmin, 11.5rem);
+  --logo-size: clamp(22rem, 53vmin, 37rem);
+  --orbit-duration: 24s;
+  --orbit-reveal-duration: 680ms;
+
+  position: relative;
+  display: grid;
+  width: min(var(--orbit-size), calc(100vw - 1.5rem));
+  aspect-ratio: 1;
+  place-items: center;
+  margin-top: calc(-1 * clamp(1rem, 3.5vmin, 2.75rem));
+  pointer-events: none;
+}
+
+.orbit-safe-zone {
+  position: absolute;
+  z-index: 0;
+  width: 86%;
+  aspect-ratio: 1;
+  clip-path: circle(50% at center);
+  pointer-events: auto;
+}
+
+.orbit-system {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  animation: orbit-spin var(--orbit-duration) linear infinite;
+  transform-origin: center;
+  will-change: transform;
+  pointer-events: none;
+}
+
+.orbit-item {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  width: var(--icon-size);
+  aspect-ratio: 1;
+  place-items: center;
+  border-radius: 0.35rem;
+  outline: none;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0.08);
+  transition:
+    top var(--orbit-reveal-duration) cubic-bezier(0.16, 1, 0.3, 1),
+    left var(--orbit-reveal-duration) cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 320ms ease,
+    transform var(--orbit-reveal-duration) cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: 0ms, 0ms, 0ms, 0ms;
+}
+
+.orbit-stage:hover .orbit-item,
+.orbit-stage:focus-within .orbit-item {
+  opacity: 1;
+  pointer-events: auto;
+  transition-delay: 0ms, 0ms, 110ms, 0ms;
+}
+
+.orbit-item:focus-visible .orbit-icon-frame {
+  box-shadow:
+    0 0 0 4px #111318,
+    0 0 0 8px rgba(255, 255, 255, 0.92);
+}
+
+.orbit-stage:hover .orbit-item-top,
+.orbit-stage:focus-within .orbit-item-top {
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%) scale(1);
+}
+
+.orbit-stage:hover .orbit-item-right,
+.orbit-stage:focus-within .orbit-item-right {
+  top: 50%;
+  left: calc(100% - var(--icon-size));
+  transform: translateY(-50%) scale(1);
+}
+
+.orbit-stage:hover .orbit-item-bottom,
+.orbit-stage:focus-within .orbit-item-bottom {
+  top: calc(100% - var(--icon-size));
+  left: 50%;
+  transform: translateX(-50%) scale(1);
+}
+
+.orbit-stage:hover .orbit-item-left,
+.orbit-stage:focus-within .orbit-item-left {
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%) scale(1);
+}
+
+.orbit-icon-frame {
+  display: grid;
+  width: 100%;
+  aspect-ratio: 1;
+  place-items: center;
+  transition: transform 180ms ease;
+  animation: orbit-counter-spin var(--orbit-duration) linear infinite;
+  transform-origin: center;
+  will-change: transform;
+}
+
+.orbit-icon-frame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+}
+
+.brand-lockup {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: clamp(0.9rem, 1.8vmin, 1.35rem);
+  pointer-events: auto;
+}
+
+.logo-spacer {
+  width: var(--logo-size);
+  aspect-ratio: 1254 / 1304;
+}
+
+.akron-logo-layer {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: block;
+  width: var(--logo-size);
+  height: auto;
+  object-fit: contain;
+  transform: translate(-50%, -50%) scale(1.15);
+  transform-origin: center;
+  user-select: none;
+}
+
+.akron-logo-lower {
+  z-index: 1;
+  clip-path: inset(42% 0 0 0);
+}
+
+.akron-logo-upper {
+  z-index: 3;
+  clip-path: inset(0 0 50% 0);
+}
+
+.install-actions {
+  position: relative;
+  z-index: 4;
+  display: grid;
+  width: var(--logo-size);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(0.65rem, 1.8vmin, 1.1rem);
+}
+
+.install-button {
+  display: inline-flex;
+  aspect-ratio: 1104 / 307;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 0;
+  background-image: url("/assets/button-sprite.png");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  color: #7f4038;
+  font-family:
+    Renogare, Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  font-size: clamp(1.2rem, 2.55vmin, 1.72rem);
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  line-height: 1;
+  padding: 0 1.2em;
+  text-align: center;
+  text-shadow:
+    0 1px 0 rgba(252, 239, 217, 0.42),
+    0 0 8px rgba(23, 18, 18, 0.18);
+  transition: transform 180ms ease;
+}
+
+.flip-text {
+  display: inline-flex;
+  perspective: 24rem;
+  transform-style: preserve-3d;
+}
+
+.flip-letter {
+  --letter-index: 0;
+
+  position: relative;
+  display: inline-grid;
+  height: 1lh;
+  transform-style: preserve-3d;
+  transform: translateZ(-0.5lh);
+  transition: transform 420ms cubic-bezier(0.2, 0.9, 0.2, 1);
+  transition-delay: calc(var(--letter-index) * 45ms);
+}
+
+.flip-letter-face {
+  grid-area: 1 / 1;
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
+
+.flip-letter-front {
+  transform: translateZ(0.5lh);
+}
+
+.flip-letter-back {
+  position: absolute;
+  inset: 0;
+  transform: rotateX(-90deg) translateZ(0.5lh);
+}
+
+.install-button:hover .flip-letter,
+.install-button:focus-visible .flip-letter {
+  transform: translateZ(-0.5lh) rotateX(90deg);
+}
+
+.install-button:active {
+  transform: translateY(1px) scale(0.99);
+}
+
+.install-button:focus-visible {
+  outline: 3px solid rgba(255, 255, 255, 0.9);
+  outline-offset: 4px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@keyframes orbit-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes orbit-counter-spin {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+@media (min-width: 700px) {
+  .landing-shell {
+    --wallpaper-image: url("/assets/background-1440.png");
+  }
+}
+
+@media (min-width: 1100px) {
+  .landing-shell {
+    --wallpaper-image: url("/assets/background-1920.png");
+  }
+}
+
+@media (min-width: 1800px) {
+  .landing-shell {
+    --wallpaper-image: url("/assets/background-2560.png");
+  }
+}
+
+@media (min-width: 2600px) {
+  .landing-shell {
+    --wallpaper-image: url("/assets/background.png");
+  }
+}
+
+@supports (background-image: image-set(url("/assets/background-960.png") 1x)) {
+  .landing-shell {
+    --wallpaper-image: image-set(
+      url("/assets/background-960.png") 1x,
+      url("/assets/background-1920.png") 2x
+    );
+  }
+
+  @media (min-width: 700px) {
+    .landing-shell {
+      --wallpaper-image: image-set(
+        url("/assets/background-1440.png") 1x,
+        url("/assets/background-2560.png") 2x
+      );
+    }
+  }
+
+  @media (min-width: 1100px) {
+    .landing-shell {
+      --wallpaper-image: image-set(
+        url("/assets/background-1920.png") 1x,
+        url("/assets/background.png") 2x
+      );
+    }
+  }
+
+  @media (min-width: 1800px) {
+    .landing-shell {
+      --wallpaper-image: image-set(
+        url("/assets/background-2560.png") 1x,
+        url("/assets/background.png") 2x
+      );
+    }
+  }
+
+  @media (min-width: 2600px) {
+    .landing-shell {
+      --wallpaper-image: url("/assets/background.png");
+    }
+  }
+}
+
+@media (max-width: 420px) {
+  .orbit-stage {
+    --orbit-size: min(28rem, calc(100vmin + 3rem));
+    --icon-size: clamp(4.8rem, 22vmin, 5.7rem);
+    --logo-size: clamp(15.5rem, 75vmin, 18rem);
+  }
+
+  .install-actions {
+    width: min(var(--logo-size), calc(100vw - 2rem));
+    gap: 0.75rem;
+  }
+
+  .install-button {
+    width: 100%;
+    min-height: 2.9rem;
+  }
+}
