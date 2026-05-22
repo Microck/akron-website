@@ -8,3 +8,5 @@ verification
 *.tsbuildinfo
 .env*
 .DS_Store
+.vercel
+.residue
