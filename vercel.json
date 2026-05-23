@@ -9,6 +9,50 @@
       "destination": "https://akron-cdb9eaf4.mintlify.app/:path*"
     },
     {
+      "source": "/akr-packs/:path*",
+      "destination": "https://akron-cdb9eaf4.mintlify.app/akr-packs/:path*"
+    },
+    {
+      "source": "/api-reference/:path*",
+      "destination": "https://akron-cdb9eaf4.mintlify.app/api-reference/:path*"
+    },
+    {
+      "source": "/concepts/:path*",
+      "destination": "https://akron-cdb9eaf4.mintlify.app/concepts/:path*"
+    },
+    {
+      "source": "/contributing/:path*",
+      "destination": "https://akron-cdb9eaf4.mintlify.app/contributing/:path*"
+    },
+    {
+      "source": "/feature-guide",
+      "destination": "https://akron-cdb9eaf4.mintlify.app/feature-guide"
+    },
+    {
+      "source": "/feature-guide/:path*",
+      "destination": "https://akron-cdb9eaf4.mintlify.app/feature-guide/:path*"
+    },
+    {
+      "source": "/getting-started/:path*",
+      "destination": "https://akron-cdb9eaf4.mintlify.app/getting-started/:path*"
+    },
+    {
+      "source": "/player-guide/:path*",
+      "destination": "https://akron-cdb9eaf4.mintlify.app/player-guide/:path*"
+    },
+    {
+      "source": "/reference/:path*",
+      "destination": "https://akron-cdb9eaf4.mintlify.app/reference/:path*"
+    },
+    {
+      "source": "/rulesets/:path*",
+      "destination": "https://akron-cdb9eaf4.mintlify.app/rulesets/:path*"
+    },
+    {
+      "source": "/troubleshooting/:path*",
+      "destination": "https://akron-cdb9eaf4.mintlify.app/troubleshooting/:path*"
+    },
+    {
       "source": "/mintlify-assets/:path*",
       "destination": "https://akron-cdb9eaf4.mintlify.app/mintlify-assets/:path*"
     },
