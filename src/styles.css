@@ -96,7 +96,7 @@ a {
   position: relative;
   width: clamp(25.3rem, 60.95vmin, 42.55rem);
   aspect-ratio: 1254 / 1304;
-  transform: translateY(-15px) scale(1.01);
+  transform: translate(-1px, -15px) scale(1.008);
   transform-origin: center;
 }
 
