@@ -48,14 +48,14 @@ a {
   place-items: center;
   overflow: hidden;
   padding: clamp(1rem, 4vw, 3rem);
-  background:
-    var(--wallpaper-image) center / cover no-repeat,
-    #111318;
+  background: #111318;
+  isolation: isolate;
 }
 
 .landing-shell::before {
   position: fixed;
   inset: 0;
+  z-index: 2;
   pointer-events: none;
   content: "";
   background-image:
@@ -63,6 +63,79 @@ a {
     linear-gradient(90deg, rgba(255, 255, 255, 0.01) 1px, transparent 1px);
   background-size: 58px 58px;
   mask-image: radial-gradient(circle at center, black, transparent 76%);
+}
+
+.landing-shell::after {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  content: "";
+  background:
+    var(--wallpaper-image) center / cover no-repeat,
+    #111318;
+  opacity: 1;
+}
+
+.preloader {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  background: #e3e2de;
+  pointer-events: auto;
+}
+
+.preloader-done {
+  animation: preloader-out 820ms ease forwards;
+  pointer-events: none;
+}
+
+.preloader-mark {
+  position: relative;
+  width: clamp(25.3rem, 60.95vmin, 42.55rem);
+  aspect-ratio: 1254 / 1304;
+  transform: translateY(-15px) scale(1.01);
+  transform-origin: center;
+}
+
+.preloader-logo {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+.preloader-logo svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.preloader-logo path {
+  vector-effect: non-scaling-stroke;
+}
+
+.preloader-logo-outline path {
+  fill: transparent;
+  stroke: #5d5e5b;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1800;
+  stroke-dashoffset: 1800;
+  animation: preloader-outline 1500ms cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+
+.preloader-logo-fill {
+  clip-path: inset(100% 0 0 0);
+  animation: preloader-fill 780ms cubic-bezier(0.16, 1, 0.3, 1) 1320ms forwards;
+}
+
+.preloader-logo-fill path {
+  fill: #5d5e5b;
 }
 
 .orbit-stage {
@@ -79,6 +152,7 @@ a {
   place-items: center;
   margin-top: calc(-1 * clamp(1rem, 3.5vmin, 2.75rem));
   pointer-events: none;
+  z-index: 3;
 }
 
 .orbit-safe-zone {
@@ -226,6 +300,14 @@ a {
   gap: clamp(0.65rem, 1.8vmin, 1.1rem);
 }
 
+.landing-shell-ready .install-button:first-child {
+  animation: page-button-in 1250ms cubic-bezier(0.16, 1, 0.3, 1) 470ms forwards;
+}
+
+.landing-shell-ready .install-button:last-child {
+  animation: page-button-in 1250ms cubic-bezier(0.16, 1, 0.3, 1) 560ms forwards;
+}
+
 .install-button {
   display: inline-flex;
   aspect-ratio: 1104 / 307;
@@ -245,12 +327,14 @@ a {
   font-weight: 400;
   letter-spacing: 0.03em;
   line-height: 1;
+  opacity: 0;
   padding: 0 1.2em;
   text-align: center;
   text-shadow:
     0 1px 0 rgba(252, 239, 217, 0.42),
     0 0 8px rgba(23, 18, 18, 0.18);
-  transition: transform 180ms ease;
+  transform: translateY(100dvh);
+  will-change: opacity, transform;
 }
 
 .flip-text {
@@ -321,6 +405,37 @@ a {
 @keyframes orbit-counter-spin {
   to {
     transform: rotate(-360deg);
+  }
+}
+
+@keyframes preloader-outline {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes preloader-fill {
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes preloader-out {
+  0% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+@keyframes page-button-in {
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    will-change: auto;
   }
 }
 

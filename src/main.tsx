@@ -1,7 +1,12 @@
-import { StrictMode } from "react";
+import { StrictMode, useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import { createRoot } from "react-dom/client";
+import preloaderLogoSvg from "./assets/preloader-logo.svg?raw";
 import "./styles.css";
+
+const preloaderLogoMarkup = preloaderLogoSvg
+  .replace(/<\?xml[^>]*>\s*/u, "")
+  .replace(/<!DOCTYPE[^>]*>\s*/u, "");
 
 type OrbitLink = Readonly<{
   href: string;
@@ -54,9 +59,70 @@ function FlipText({ text }: Readonly<{ text: string }>) {
   );
 }
 
-function AkronLandingPage() {
+function Preloader({ isDone }: Readonly<{ isDone: boolean }>) {
   return (
-    <main className="landing-shell" aria-label="Akron landing page">
+    <div
+      className={`preloader${isDone ? " preloader-done" : ""}`}
+      aria-hidden="true"
+    >
+      <div className="preloader-mark" aria-hidden="true">
+        <div
+          className="preloader-logo preloader-logo-outline"
+          dangerouslySetInnerHTML={{ __html: preloaderLogoMarkup }}
+        />
+        <div
+          className="preloader-logo preloader-logo-fill"
+          dangerouslySetInnerHTML={{ __html: preloaderLogoMarkup }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function AkronLandingPage() {
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    let hasWindowLoaded = document.readyState === "complete";
+    let hasMinimumRun = false;
+    let isCancelled = false;
+
+    const finishIfReady = () => {
+      if (!isCancelled && hasWindowLoaded && hasMinimumRun) {
+        setIsLoaded(true);
+      }
+    };
+
+    const handleWindowLoad = () => {
+      hasWindowLoaded = true;
+      finishIfReady();
+    };
+
+    const minimumRunTimer = window.setTimeout(() => {
+      hasMinimumRun = true;
+      finishIfReady();
+    }, 2100);
+
+    if (hasWindowLoaded) {
+      finishIfReady();
+    } else {
+      window.addEventListener("load", handleWindowLoad, { once: true });
+    }
+
+    return () => {
+      isCancelled = true;
+      window.clearTimeout(minimumRunTimer);
+      window.removeEventListener("load", handleWindowLoad);
+    };
+  }, []);
+
+  return (
+    <main
+      className={`landing-shell${isLoaded ? " landing-shell-ready" : ""}`}
+      aria-label="Akron landing page"
+    >
+      <Preloader isDone={isLoaded} />
+
       <section className="orbit-stage" aria-label="Akron links">
         <div className="orbit-safe-zone" aria-hidden="true" />
 
