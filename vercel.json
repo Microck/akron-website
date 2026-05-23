@@ -1,0 +1,36 @@
+{
+  "rewrites": [
+    {
+      "source": "/docs",
+      "destination": "https://akron-cdb9eaf4.mintlify.app/"
+    },
+    {
+      "source": "/docs/:path*",
+      "destination": "https://akron-cdb9eaf4.mintlify.app/:path*"
+    },
+    {
+      "source": "/mintlify-assets/:path*",
+      "destination": "https://akron-cdb9eaf4.mintlify.app/mintlify-assets/:path*"
+    },
+    {
+      "source": "/fonts/forma-djr-heading-tracked.woff",
+      "destination": "https://akron-cdb9eaf4.mintlify.app/fonts/forma-djr-heading-tracked.woff"
+    },
+    {
+      "source": "/fonts/forma-djr-variable.woff",
+      "destination": "https://akron-cdb9eaf4.mintlify.app/fonts/forma-djr-variable.woff"
+    },
+    {
+      "source": "/llms.txt",
+      "destination": "https://akron-cdb9eaf4.mintlify.app/llms.txt"
+    },
+    {
+      "source": "/llms-full.txt",
+      "destination": "https://akron-cdb9eaf4.mintlify.app/llms-full.txt"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "https://akron-cdb9eaf4.mintlify.app/sitemap.xml"
+    }
+  ]
+}
