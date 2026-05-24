@@ -1,6 +1,26 @@
 {
   "rewrites": [
     {
+      "source": "/catalog/:path*",
+      "destination": "https://pub-5441db2ee508423890b8fa2a6a176ffe.r2.dev/catalog/:path*"
+    },
+    {
+      "source": "/maps/:map/:pack/capture.webp",
+      "destination": "https://pub-5441db2ee508423890b8fa2a6a176ffe.r2.dev/captures/:map/:pack.webp"
+    },
+    {
+      "source": "/maps/:map/:pack.akr",
+      "destination": "https://pub-5441db2ee508423890b8fa2a6a176ffe.r2.dev/packs/:map/:pack.akr"
+    },
+    {
+      "source": "/submissions/:path*",
+      "destination": "https://pub-5441db2ee508423890b8fa2a6a176ffe.r2.dev/submissions/:path*"
+    },
+    {
+      "source": "/r2-assets/:path*",
+      "destination": "https://pub-5441db2ee508423890b8fa2a6a176ffe.r2.dev/:path*"
+    },
+    {
       "source": "/docs",
       "destination": "https://akron-cdb9eaf4.mintlify.app/"
     },
