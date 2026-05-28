@@ -8,6 +8,54 @@ const preloaderLogoMarkup = preloaderLogoSvg
   .replace(/<\?xml[^>]*>\s*/u, "")
   .replace(/<!DOCTYPE[^>]*>\s*/u, "");
 
+const gamebananaModId = "681169";
+const gamebananaFallbackFileId = "1713821";
+const gamebananaModUrl = `https://gamebanana.com/mods/${gamebananaModId}`;
+const gamebananaFilesApiUrl =
+  `https://api.gamebanana.com/Core/Item/Data?itemtype=Mod&itemid=${gamebananaModId}` +
+  "&fields=Files().aFiles()&return_keys=1&format=json_min&flags=JSON_UNESCAPED_SLASHES";
+
+type GamebananaFile = Readonly<{
+  _idRow: string | number;
+  _tsDateAdded: string | number;
+  _bIsArchived: boolean;
+  _sAnalysisResult?: string;
+  _sAvResult?: string;
+}>;
+
+type GamebananaFilesResponse = Readonly<{
+  "Files().aFiles()"?: Record<string, GamebananaFile>;
+}>;
+
+function getDownloadUrl(fileId: string) {
+  return `https://gamebanana.com/dl/${fileId}`;
+}
+
+function getOlympusInstallUrl(fileId: string) {
+  return `everest:https://gamebanana.com/mmdl/${fileId},Mod,${gamebananaModId}`;
+}
+
+function selectLatestGamebananaFileId(files: Record<string, GamebananaFile>) {
+  let latestFile: GamebananaFile | null = null;
+  let latestTimestamp = Number.NEGATIVE_INFINITY;
+
+  for (const file of Object.values(files)) {
+    const timestamp = Number(file._tsDateAdded);
+    const isInstallable =
+      !file._bIsArchived &&
+      Number.isFinite(timestamp) &&
+      file._sAnalysisResult !== "failed" &&
+      file._sAvResult !== "infected";
+
+    if (isInstallable && timestamp > latestTimestamp) {
+      latestFile = file;
+      latestTimestamp = timestamp;
+    }
+  }
+
+  return latestFile ? String(latestFile._idRow) : null;
+}
+
 type OrbitLink = Readonly<{
   href: string;
   label: string;
@@ -29,7 +77,7 @@ const orbitLinks: OrbitLink[] = [
     className: "orbit-item orbit-item-right",
   },
   {
-    href: "/gamebanana",
+    href: gamebananaModUrl,
     label: "GameBanana",
     asset: "/assets/gamebanana-icon.png",
     className: "orbit-item orbit-item-bottom",
@@ -81,6 +129,9 @@ function Preloader({ isDone }: Readonly<{ isDone: boolean }>) {
 
 function AkronLandingPage() {
   const [isLoaded, setIsLoaded] = useState(false);
+  const [gamebananaFileId, setGamebananaFileId] = useState(
+    gamebananaFallbackFileId,
+  );
 
   useEffect(() => {
     let hasWindowLoaded = document.readyState === "complete";
@@ -113,6 +164,41 @@ function AkronLandingPage() {
       isCancelled = true;
       window.clearTimeout(minimumRunTimer);
       window.removeEventListener("load", handleWindowLoad);
+    };
+  }, []);
+
+  useEffect(() => {
+    const abortController = new AbortController();
+
+    async function updateLatestGamebananaFile() {
+      const response = await fetch(gamebananaFilesApiUrl, {
+        signal: abortController.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error(`GameBanana API returned ${response.status}`);
+      }
+
+      const payload = (await response.json()) as GamebananaFilesResponse;
+      const latestFileId = selectLatestGamebananaFileId(
+        payload["Files().aFiles()"] ?? {},
+      );
+
+      if (latestFileId) {
+        setGamebananaFileId(latestFileId);
+      }
+    }
+
+    updateLatestGamebananaFile().catch((error: unknown) => {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        return;
+      }
+
+      console.warn("Unable to load the latest GameBanana file.", error);
+    });
+
+    return () => {
+      abortController.abort();
     };
   }, []);
 
@@ -165,7 +251,7 @@ function AkronLandingPage() {
           <div className="install-actions" aria-label="Install options">
             <a
               className="install-button"
-              href="/download"
+              href={getDownloadUrl(gamebananaFileId)}
               aria-label="Download"
             >
               <span className="sr-only">Download</span>
@@ -173,7 +259,7 @@ function AkronLandingPage() {
             </a>
             <a
               className="install-button"
-              href="/olympus"
+              href={getOlympusInstallUrl(gamebananaFileId)}
               aria-label="Olympus"
             >
               <span className="sr-only">Olympus</span>
