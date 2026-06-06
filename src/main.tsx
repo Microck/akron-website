@@ -35,6 +35,17 @@ function getOlympusInstallUrl(fileId: string) {
   return `everest:https://gamebanana.com/mmdl/${fileId},Mod,${gamebananaModId}`;
 }
 
+async function loadLatestGamebananaFileId(signal: AbortSignal) {
+  const response = await fetch(gamebananaFilesApiUrl, { signal });
+
+  if (!response.ok) {
+    throw new Error(`GameBanana API returned ${response.status}`);
+  }
+
+  const payload = (await response.json()) as GamebananaFilesResponse;
+  return selectLatestGamebananaFileId(payload["Files().aFiles()"] ?? {});
+}
+
 function selectLatestGamebananaFileId(files: Record<string, GamebananaFile>) {
   let latestFile: GamebananaFile | null = null;
   let latestTimestamp = Number.NEGATIVE_INFINITY;
@@ -171,17 +182,8 @@ function AkronLandingPage() {
     const abortController = new AbortController();
 
     async function updateLatestGamebananaFile() {
-      const response = await fetch(gamebananaFilesApiUrl, {
-        signal: abortController.signal,
-      });
-
-      if (!response.ok) {
-        throw new Error(`GameBanana API returned ${response.status}`);
-      }
-
-      const payload = (await response.json()) as GamebananaFilesResponse;
-      const latestFileId = selectLatestGamebananaFileId(
-        payload["Files().aFiles()"] ?? {},
+      const latestFileId = await loadLatestGamebananaFileId(
+        abortController.signal,
       );
 
       if (latestFileId) {
@@ -272,8 +274,60 @@ function AkronLandingPage() {
   );
 }
 
+function EverestRedirectPage() {
+  const [installUrl, setInstallUrl] = useState(
+    getOlympusInstallUrl(gamebananaFallbackFileId),
+  );
+
+  useEffect(() => {
+    const abortController = new AbortController();
+    let isCancelled = false;
+
+    async function redirectToEverest() {
+      let fileId = gamebananaFallbackFileId;
+
+      try {
+        fileId =
+          (await loadLatestGamebananaFileId(abortController.signal)) ?? fileId;
+      } catch (error: unknown) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+
+        console.warn("Unable to load the latest GameBanana file.", error);
+      }
+
+      if (isCancelled) {
+        return;
+      }
+
+      const latestInstallUrl = getOlympusInstallUrl(fileId);
+      setInstallUrl(latestInstallUrl);
+      window.location.replace(latestInstallUrl);
+    }
+
+    redirectToEverest();
+
+    return () => {
+      isCancelled = true;
+      abortController.abort();
+    };
+  }, []);
+
+  return (
+    <main className="everest-redirect-shell" aria-label="Akron Olympus install">
+      <a className="install-button everest-redirect-button" href={installUrl}>
+        Open Olympus
+      </a>
+    </main>
+  );
+}
+
+const currentPath = window.location.pathname.replace(/\/+$/u, "") || "/";
+const App = currentPath === "/everest" ? EverestRedirectPage : AkronLandingPage;
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <AkronLandingPage />
+    <App />
   </StrictMode>,
 );

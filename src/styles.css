@@ -77,6 +77,18 @@ a {
   opacity: 1;
 }
 
+.everest-redirect-shell {
+  display: grid;
+  min-height: 100dvh;
+  place-items: center;
+  padding: 1.5rem;
+  background: #111318;
+}
+
+.everest-redirect-button {
+  color: #f5f1e8;
+}
+
 .preloader {
   position: fixed;
   inset: 0;

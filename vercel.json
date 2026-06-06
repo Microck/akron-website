@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/everest",
+      "destination": "/"
+    },
+    {
       "source": "/catalog/:path*",
       "destination": "https://pub-5441db2ee508423890b8fa2a6a176ffe.r2.dev/catalog/:path*"
     },
