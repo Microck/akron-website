@@ -77,7 +77,7 @@ a {
   opacity: 1;
 }
 
-.everest-redirect-shell {
+.install-redirect-shell {
   display: grid;
   min-height: 100dvh;
   place-items: center;
@@ -85,7 +85,7 @@ a {
   background: #111318;
 }
 
-.everest-redirect-button {
+.install-redirect-button {
   color: #f5f1e8;
 }
 

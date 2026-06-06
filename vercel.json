@@ -1,7 +1,11 @@
 {
   "rewrites": [
     {
-      "source": "/everest",
+      "source": "/olympus",
+      "destination": "/"
+    },
+    {
+      "source": "/raw",
       "destination": "/"
     },
     {

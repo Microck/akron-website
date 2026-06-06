@@ -67,6 +67,8 @@ function selectLatestGamebananaFileId(files: Record<string, GamebananaFile>) {
   return latestFile ? String(latestFile._idRow) : null;
 }
 
+type InstallEndpoint = "olympus" | "raw";
+
 type OrbitLink = Readonly<{
   href: string;
   label: string;
@@ -140,9 +142,6 @@ function Preloader({ isDone }: Readonly<{ isDone: boolean }>) {
 
 function AkronLandingPage() {
   const [isLoaded, setIsLoaded] = useState(false);
-  const [gamebananaFileId, setGamebananaFileId] = useState(
-    gamebananaFallbackFileId,
-  );
 
   useEffect(() => {
     let hasWindowLoaded = document.readyState === "complete";
@@ -175,32 +174,6 @@ function AkronLandingPage() {
       isCancelled = true;
       window.clearTimeout(minimumRunTimer);
       window.removeEventListener("load", handleWindowLoad);
-    };
-  }, []);
-
-  useEffect(() => {
-    const abortController = new AbortController();
-
-    async function updateLatestGamebananaFile() {
-      const latestFileId = await loadLatestGamebananaFileId(
-        abortController.signal,
-      );
-
-      if (latestFileId) {
-        setGamebananaFileId(latestFileId);
-      }
-    }
-
-    updateLatestGamebananaFile().catch((error: unknown) => {
-      if (error instanceof DOMException && error.name === "AbortError") {
-        return;
-      }
-
-      console.warn("Unable to load the latest GameBanana file.", error);
-    });
-
-    return () => {
-      abortController.abort();
     };
   }, []);
 
@@ -253,7 +226,7 @@ function AkronLandingPage() {
           <div className="install-actions" aria-label="Install options">
             <a
               className="install-button"
-              href={getDownloadUrl(gamebananaFileId)}
+              href="/raw"
               aria-label="Download"
             >
               <span className="sr-only">Download</span>
@@ -261,7 +234,7 @@ function AkronLandingPage() {
             </a>
             <a
               className="install-button"
-              href={getOlympusInstallUrl(gamebananaFileId)}
+              href="/olympus"
               aria-label="Olympus"
             >
               <span className="sr-only">Olympus</span>
@@ -274,16 +247,19 @@ function AkronLandingPage() {
   );
 }
 
-function EverestRedirectPage() {
+function InstallRedirectPage({ endpoint }: Readonly<{ endpoint: InstallEndpoint }>) {
   const [installUrl, setInstallUrl] = useState(
-    getOlympusInstallUrl(gamebananaFallbackFileId),
+    endpoint === "olympus"
+      ? getOlympusInstallUrl(gamebananaFallbackFileId)
+      : getDownloadUrl(gamebananaFallbackFileId),
   );
+  const label = endpoint === "olympus" ? "Open Olympus" : "Download Akron";
 
   useEffect(() => {
     const abortController = new AbortController();
     let isCancelled = false;
 
-    async function redirectToEverest() {
+    async function redirectToInstallTarget() {
       let fileId = gamebananaFallbackFileId;
 
       try {
@@ -301,30 +277,37 @@ function EverestRedirectPage() {
         return;
       }
 
-      const latestInstallUrl = getOlympusInstallUrl(fileId);
+      const latestInstallUrl =
+        endpoint === "olympus"
+          ? getOlympusInstallUrl(fileId)
+          : getDownloadUrl(fileId);
       setInstallUrl(latestInstallUrl);
       window.location.replace(latestInstallUrl);
     }
 
-    redirectToEverest();
+    redirectToInstallTarget();
 
     return () => {
       isCancelled = true;
       abortController.abort();
     };
-  }, []);
+  }, [endpoint]);
 
   return (
-    <main className="everest-redirect-shell" aria-label="Akron Olympus install">
-      <a className="install-button everest-redirect-button" href={installUrl}>
-        Open Olympus
+    <main className="install-redirect-shell" aria-label="Akron install">
+      <a className="install-button install-redirect-button" href={installUrl}>
+        {label}
       </a>
     </main>
   );
 }
 
 const currentPath = window.location.pathname.replace(/\/+$/u, "") || "/";
-const App = currentPath === "/everest" ? EverestRedirectPage : AkronLandingPage;
+const currentEndpoint: InstallEndpoint | null =
+  currentPath === "/olympus" ? "olympus" : currentPath === "/raw" ? "raw" : null;
+const App = currentEndpoint
+  ? () => <InstallRedirectPage endpoint={currentEndpoint} />
+  : AkronLandingPage;
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
