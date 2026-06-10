@@ -1,13 +1,17 @@
 {
-  "rewrites": [
+  "redirects": [
     {
       "source": "/olympus",
-      "destination": "/"
+      "destination": "everest:https://gamebanana.com/mmdl/1725224,Mod,681169",
+      "permanent": false
     },
     {
       "source": "/raw",
-      "destination": "/"
-    },
+      "destination": "https://gamebanana.com/dl/1725224",
+      "permanent": false
+    }
+  ],
+  "rewrites": [
     {
       "source": "/catalog/:path*",
       "destination": "https://pub-5441db2ee508423890b8fa2a6a176ffe.r2.dev/catalog/:path*"
