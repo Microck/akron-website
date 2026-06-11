@@ -69,6 +69,10 @@
       "destination": "https://akron-cdb9eaf4.mintlify.app/player-guide/:path*"
     },
     {
+      "source": "/project/:path*",
+      "destination": "https://akron-cdb9eaf4.mintlify.app/project/:path*"
+    },
+    {
       "source": "/reference/:path*",
       "destination": "https://akron-cdb9eaf4.mintlify.app/reference/:path*"
     },
