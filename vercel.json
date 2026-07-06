@@ -50,6 +50,48 @@
           "value": "nosniff"
         }
       ]
+    },
+    {
+      "source": "/uploads/:path*",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        },
+        {
+          "key": "CDN-Cache-Control",
+          "value": "no-store"
+        },
+        {
+          "key": "Vercel-CDN-Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    },
+    {
+      "source": "/bot/:path*",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        },
+        {
+          "key": "CDN-Cache-Control",
+          "value": "no-store"
+        },
+        {
+          "key": "Vercel-CDN-Cache-Control",
+          "value": "no-store"
+        }
+      ]
     }
   ],
   "rewrites": [
@@ -60,6 +102,14 @@
     {
       "source": "/raw",
       "destination": "/api/raw"
+    },
+    {
+      "source": "/uploads/:path*",
+      "destination": "https://akron-upload-worker.marcos-jaen-lego.workers.dev/uploads/:path*"
+    },
+    {
+      "source": "/bot/:path*",
+      "destination": "https://akron-upload-worker.marcos-jaen-lego.workers.dev/bot/:path*"
     },
     {
       "source": "/catalog/:path*",
