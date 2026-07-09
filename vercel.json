@@ -120,6 +120,10 @@
       "destination": "https://pub-5441db2ee508423890b8fa2a6a176ffe.r2.dev/captures/:map/:pack.webp"
     },
     {
+      "source": "/maps/:map/:pack/captures/:capture",
+      "destination": "https://pub-5441db2ee508423890b8fa2a6a176ffe.r2.dev/captures/:map/:pack/:capture"
+    },
+    {
       "source": "/maps/:map/:pack.akr",
       "destination": "https://pub-5441db2ee508423890b8fa2a6a176ffe.r2.dev/packs/:map/:pack.akr"
     },
