@@ -1,0 +1,7 @@
+
+# hosting
+
+## uploads
+- label: published multi-image pack captures resolve through the Akron domain to their R2 capture objects
+  command: bun test tests/vercel-rewrites.test.ts
+  tags: [spec, implemented]
