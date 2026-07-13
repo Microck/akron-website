@@ -229,7 +229,7 @@ export function StatusPage() {
     async function loadStatus() {
       try {
         const [endpointsResponse, configResponse] = await Promise.all([
-          fetch(`${statusApiBase}/endpoints/statuses?page=1&pageSize=50`, {
+          fetch(`${statusApiBase}/endpoints/statuses?page=1&pageSize=60`, {
             signal: abortController.signal,
           }),
           fetch(`${statusApiBase}/config`, { signal: abortController.signal }),
