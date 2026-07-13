@@ -96,6 +96,14 @@
   ],
   "rewrites": [
     {
+      "source": "/status",
+      "destination": "/"
+    },
+    {
+      "source": "/status-api/:path*",
+      "destination": "http://145.241.164.73/api/v1/:path*"
+    },
+    {
       "source": "/olympus",
       "destination": "/api/olympus"
     },

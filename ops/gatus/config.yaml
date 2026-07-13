@@ -1,0 +1,103 @@
+storage:
+  type: sqlite
+  path: /data/gatus.db
+  caching: true
+  maximum-number-of-results: 43200
+  maximum-number-of-events: 100
+
+ui:
+  title: Akron Status
+  description: Live health and incident history for Akron services.
+  dashboard-heading: Akron service status
+  dashboard-subheading: Current availability of player-facing Akron services
+  header: Akron
+  link: https://akron.micr.dev
+  dark-mode: true
+  default-sort-by: group
+  buttons:
+    - name: Akron
+      link: https://akron.micr.dev
+    - name: Documentation
+      link: https://akron.micr.dev/docs
+
+announcements:
+  - timestamp: 2026-07-13T00:00:00Z
+    type: warning
+    message: "Resolved: The Community Pack Catalog now serves format v2 required by current Akron clients."
+    archived: true
+
+endpoints:
+  - name: Website
+    group: Core
+    url: https://akron.micr.dev/
+    interval: 1m
+    client:
+      timeout: 15s
+    conditions:
+      - "[STATUS] == 200"
+      - "[BODY] == pat(*<title>Akron</title>*)"
+      - "[CERTIFICATE_EXPIRATION] > 72h"
+
+  - name: Documentation
+    group: Core
+    url: https://akron.micr.dev/docs
+    interval: 1m
+    client:
+      timeout: 15s
+    conditions:
+      - "[STATUS] == 200"
+      - "[BODY] == pat(*<title>Akron documentation - Akron</title>*)"
+
+  - name: Raw Download Redirect
+    group: Distribution
+    url: https://akron.micr.dev/raw
+    interval: 1m
+    client:
+      ignore-redirect: true
+      timeout: 15s
+    conditions:
+      - "[STATUS] == 307"
+
+  - name: Olympus Install Redirect
+    group: Distribution
+    url: https://akron.micr.dev/olympus
+    interval: 1m
+    client:
+      ignore-redirect: true
+      timeout: 15s
+    conditions:
+      - "[STATUS] == 307"
+
+  - name: Community Pack Catalog
+    group: Community Packs
+    url: https://akron.micr.dev/catalog/index.json
+    interval: 1m
+    client:
+      timeout: 15s
+    conditions:
+      - "[STATUS] == 200"
+      - "[BODY].format == akron-community-pack-index-v2"
+      - "[BODY].version == 2"
+      - "has([BODY].packs) == true"
+
+  - name: Upload API
+    group: Community Packs
+    url: https://akron.micr.dev/uploads/challenge
+    interval: 1m
+    client:
+      timeout: 15s
+    conditions:
+      - "[STATUS] == 200"
+      - "[BODY].termsVersion == 1"
+      - "len([BODY].acceptedSections) > 0"
+      - "has([BODY].limits) == true"
+
+  - name: Discord Platform API
+    group: External Dependencies
+    url: https://discord.com/api/v10/gateway
+    interval: 1m
+    client:
+      timeout: 15s
+    conditions:
+      - "[STATUS] == 200"
+      - "[BODY].url == wss://gateway.discord.gg"

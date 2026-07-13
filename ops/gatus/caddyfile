@@ -1,0 +1,24 @@
+{
+	admin off
+	auto_https off
+}
+
+# Vercel terminates HTTPS for akron.micr.dev/status and proxies the public
+# status routes to this origin. The origin contains public status data only.
+:80 {
+	encode zstd gzip
+	reverse_proxy gatus:8080
+
+	header {
+		-Server
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+		Referrer-Policy "no-referrer"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}
