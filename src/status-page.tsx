@@ -35,6 +35,17 @@ export type OverallStatus = "degraded" | "operational" | "unknown";
 
 const statusApiBase = "/status-api";
 
+function sortResultsChronologically(results: readonly StatusResult[]) {
+  return [...results].sort(
+    (left, right) =>
+      new Date(left.timestamp).getTime() - new Date(right.timestamp).getTime(),
+  );
+}
+
+function getLatestResult(results: readonly StatusResult[]) {
+  return sortResultsChronologically(results).at(-1);
+}
+
 export function getOverallStatus(
   endpoints: readonly StatusEndpoint[],
 ): OverallStatus {
@@ -42,7 +53,9 @@ export function getOverallStatus(
     return "unknown";
   }
 
-  return endpoints.every((endpoint) => endpoint.results.at(-1)?.success === true)
+  return endpoints.every(
+    (endpoint) => getLatestResult(endpoint.results)?.success === true,
+  )
     ? "operational"
     : "degraded";
 }
@@ -74,7 +87,7 @@ export function getUptimeSummary(
   results: readonly StatusResult[],
   limit = 60,
 ) {
-  const recentResults = results.slice(-limit);
+  const recentResults = sortResultsChronologically(results).slice(-limit);
 
   if (recentResults.length === 0) {
     return { results: recentResults, percentage: null };
@@ -125,7 +138,7 @@ function StatusSummary({
 }>) {
   const overallStatus = getOverallStatus(endpoints);
   const latestTimestamp = endpoints
-    .map((endpoint) => endpoint.results.at(-1)?.timestamp)
+    .map((endpoint) => getLatestResult(endpoint.results)?.timestamp)
     .filter((timestamp): timestamp is string => Boolean(timestamp))
     .sort()
     .at(-1);
@@ -157,9 +170,9 @@ function StatusSummary({
 }
 
 function EndpointRow({ endpoint }: Readonly<{ endpoint: StatusEndpoint }>) {
-  const latestResult = endpoint.results.at(-1);
-  const isHealthy = latestResult?.success === true;
   const uptime = getUptimeSummary(endpoint.results);
+  const latestResult = uptime.results.at(-1);
+  const isHealthy = latestResult?.success === true;
   const missingBarCount = 60 - uptime.results.length;
 
   return (

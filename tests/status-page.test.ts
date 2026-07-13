@@ -37,16 +37,30 @@ describe("getOverallStatus", () => {
     );
   });
 
-  test("uses the newest result when Gatus returns chronological history", () => {
-    const recoveredEndpoint: StatusEndpoint = {
+  test("uses the newest timestamp regardless of history ordering", () => {
+    const olderFailure: StatusResult = {
+      success: false,
+      timestamp: "2026-07-13T12:00:00Z",
+      duration: 25_000_000,
+      status: 500,
+    };
+    const newerSuccess: StatusResult = {
+      success: true,
+      timestamp: "2026-07-13T12:01:00Z",
+      duration: 25_000_000,
+      status: 200,
+    };
+    const statusEndpoint: StatusEndpoint = {
       ...endpoint(false),
-      results: [
-        ...endpoint(false).results,
-        ...endpoint(true).results,
-      ],
+      results: [olderFailure, newerSuccess],
     };
 
-    expect(getOverallStatus([recoveredEndpoint])).toBe("operational");
+    expect(getOverallStatus([statusEndpoint])).toBe("operational");
+    expect(
+      getOverallStatus([
+        { ...statusEndpoint, results: statusEndpoint.results.toReversed() },
+      ]),
+    ).toBe("operational");
   });
 
   test("reports degraded for failures or missing endpoint results", () => {
@@ -76,10 +90,14 @@ describe("getUptimeSummary", () => {
   });
 
   test("keeps the newest checks and calculates their success rate", () => {
-    const summary = getUptimeSummary(
-      [result(false, 0), result(true, 1), result(true, 2), result(false, 3)],
-      3,
-    );
+    const history = [
+      result(false, 0),
+      result(true, 1),
+      result(true, 2),
+      result(false, 3),
+    ];
+    const summary = getUptimeSummary(history, 3);
+    const reversedSummary = getUptimeSummary(history.toReversed(), 3);
 
     expect(summary.results.map(({ success }) => success)).toEqual([
       true,
@@ -87,6 +105,7 @@ describe("getUptimeSummary", () => {
       false,
     ]);
     expect(summary.percentage).toBe("66.67%");
+    expect(reversedSummary).toEqual(summary);
   });
 
   test("reports no percentage without monitoring history", () => {
