@@ -2,6 +2,7 @@ import { StrictMode, useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import { createRoot } from "react-dom/client";
 import preloaderLogoSvg from "./assets/preloader-logo.svg?raw";
+import { StatusPage } from "./status-page";
 import "./styles.css";
 
 const preloaderLogoMarkup = preloaderLogoSvg
@@ -305,9 +306,16 @@ function InstallRedirectPage({ endpoint }: Readonly<{ endpoint: InstallEndpoint 
 const currentPath = window.location.pathname.replace(/\/+$/u, "") || "/";
 const currentEndpoint: InstallEndpoint | null =
   currentPath === "/olympus" ? "olympus" : currentPath === "/raw" ? "raw" : null;
-const App = currentEndpoint
-  ? () => <InstallRedirectPage endpoint={currentEndpoint} />
-  : AkronLandingPage;
+const App =
+  currentPath === "/status"
+    ? StatusPage
+    : currentEndpoint
+      ? () => <InstallRedirectPage endpoint={currentEndpoint} />
+      : AkronLandingPage;
+
+if (currentPath === "/status") {
+  document.body.classList.add("status-body");
+}
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

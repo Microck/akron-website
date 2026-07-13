@@ -1,0 +1,57 @@
+name: akron-status
+
+services:
+  gatus:
+    image: ghcr.io/twin/gatus:v5.36.0
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 100
+    mem_limit: 256m
+    cpus: "0.50"
+    environment:
+      GATUS_CONFIG_PATH: /config/config.yaml
+      GATUS_LOG_LEVEL: INFO
+    volumes:
+      - ./config.yaml:/config/config.yaml:ro
+      - ./data:/data
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+  caddy:
+    image: caddy:2.11.4-alpine
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    pids_limit: 100
+    mem_limit: 256m
+    cpus: "0.25"
+    depends_on:
+      - gatus
+    ports:
+      - "80:80"
+    volumes:
+      - ./caddyfile:/etc/caddy/Caddyfile:ro
+      - ./caddy-data:/data
+      - ./caddy-config:/config
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"

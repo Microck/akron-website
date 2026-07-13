@@ -9,3 +9,19 @@ describe("Vercel upload rewrites", () => {
     });
   });
 });
+
+describe("Vercel status proxy", () => {
+  test("serves the website app at the status path", () => {
+    expect(vercelConfig.rewrites).toContainEqual({
+      source: "/status",
+      destination: "/"
+    });
+  });
+
+  test("proxies only the status API namespace to Gatus", () => {
+    expect(vercelConfig.rewrites).toContainEqual({
+      source: "/status-api/:path*",
+      destination: "http://145.241.164.73/api/v1/:path*"
+    });
+  });
+});

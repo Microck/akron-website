@@ -1,6 +1,17 @@
 @font-face {
+  font-family: "Inter";
+  src: url("/fonts/inter-latin-variable.woff2") format("woff2");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 100 900;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6,
+    U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
+    U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
   font-family: "Renogare";
-  src: url("/fonts/renogare-regular.otf") format("opentype");
+  src: url("/fonts/renogare-regular.woff2") format("woff2");
   font-display: swap;
   font-style: normal;
   font-weight: 400;
@@ -532,5 +543,507 @@ a {
   .install-button {
     width: 100%;
     min-height: 2.9rem;
+  }
+}
+
+body.status-body {
+  min-height: 100dvh;
+  overflow: auto;
+  background: oklch(88% 0.08 75);
+}
+
+.status-page {
+  --wallpaper-image: url("/assets/background-960.png");
+  --status-paper: oklch(98% 0.025 85 / 92%);
+  --status-paper-strong: oklch(99% 0.018 85 / 96%);
+  --status-text: oklch(37% 0.065 38);
+  --status-muted: oklch(54% 0.04 48);
+  --status-border: oklch(72% 0.065 58 / 72%);
+  --status-green: oklch(49% 0.09 130);
+  --status-green-soft: oklch(93% 0.055 125 / 92%);
+  --status-yellow: oklch(58% 0.13 62);
+  --status-yellow-soft: oklch(93% 0.075 82 / 94%);
+  --status-red: oklch(47% 0.13 30);
+  --status-red-soft: oklch(94% 0.045 32 / 94%);
+
+  position: relative;
+  min-height: 100dvh;
+  padding: 2.25rem 1rem 2rem;
+  color: var(--status-text);
+  color-scheme: light;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-optical-sizing: auto;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  isolation: isolate;
+}
+
+.status-page::before,
+.status-page::after {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  content: "";
+}
+
+.status-page::before {
+  background:
+    var(--wallpaper-image) center top / cover no-repeat,
+    oklch(88% 0.08 75);
+}
+
+.status-page::after {
+  background: oklch(98% 0.028 84 / 76%);
+}
+
+.status-page ::selection {
+  color: var(--status-text);
+  background: oklch(86% 0.12 78);
+}
+
+.status-header {
+  display: flex;
+  width: min(100%, 44rem);
+  min-height: 3rem;
+  align-items: center;
+  margin-inline: auto;
+  margin-bottom: 1.75rem;
+}
+
+.status-wordmark {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  color: var(--status-text);
+  font-family:
+    Renogare, Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 1rem;
+}
+
+.status-footer a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  color: var(--status-muted);
+  font-size: 0.8125rem;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 0.2em;
+  text-underline-position: from-font;
+}
+
+.status-footer a:hover,
+.status-footer a:focus-visible {
+  color: var(--status-text);
+  text-decoration-color: currentColor;
+}
+
+.status-wordmark:focus-visible,
+.status-footer a:focus-visible {
+  border-radius: 0.2rem;
+  outline: 2px solid var(--status-red);
+  outline-offset: 2px;
+}
+
+.status-content {
+  width: min(100%, 44rem);
+  margin-inline: auto;
+}
+
+.status-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  min-height: 4.25rem;
+  margin-bottom: 0.75rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--status-border);
+  border-radius: 0.45rem;
+  background: var(--status-paper-strong);
+}
+
+.status-summary-operational {
+  border-color: color-mix(in oklch, var(--status-green) 45%, transparent);
+  background: var(--status-green-soft);
+}
+
+.status-summary-degraded {
+  border-color: color-mix(in oklch, var(--status-yellow) 52%, transparent);
+  background: var(--status-yellow-soft);
+}
+
+.status-summary-dot,
+.status-dot {
+  flex: 0 0 auto;
+  border-radius: 50%;
+}
+
+.status-summary-dot {
+  width: 0.7rem;
+  height: 0.7rem;
+  background: var(--status-muted);
+}
+
+.status-summary-operational .status-summary-dot {
+  background: var(--status-green);
+}
+
+.status-summary-degraded .status-summary-dot {
+  background: var(--status-yellow);
+}
+
+.status-summary h1,
+.status-summary p,
+.status-notice h2,
+.status-notice p,
+.status-notice time {
+  margin: 0;
+}
+
+.status-summary h1 {
+  font-family:
+    Renogare, Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.9375rem;
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+.status-summary p {
+  margin-top: 0.1rem;
+  color: var(--status-muted);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.status-notice {
+  margin-block: 0.75rem;
+  padding: 1rem;
+  border: 1px solid color-mix(in oklch, var(--status-yellow) 52%, transparent);
+  border-radius: 0.45rem;
+  background: var(--status-yellow-soft);
+}
+
+.status-notice-error,
+.status-notice-outage {
+  border-color: color-mix(in oklch, var(--status-red) 48%, transparent);
+  background: var(--status-red-soft);
+}
+
+.status-notice-label {
+  margin: 0 0 0.35rem;
+  color: var(--status-yellow);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+
+.status-notice-error .status-notice-label,
+.status-notice-outage .status-notice-label {
+  color: var(--status-red);
+}
+
+.status-notice h2 {
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+.status-notice time,
+.status-notice > div > p:last-child {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--status-muted);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.status-groups {
+  margin-top: 1.25rem;
+  overflow: hidden;
+  border: 1px solid var(--status-border);
+  border-radius: 0.45rem;
+  background: var(--status-paper);
+}
+
+.status-group {
+  margin: 0;
+}
+
+.status-group + .status-group {
+  border-top: 1px solid var(--status-border);
+}
+
+.status-group > header {
+  display: flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid color-mix(in oklch, var(--status-border) 62%, transparent);
+  background: oklch(94% 0.04 72 / 62%);
+}
+
+.status-group > header h2 {
+  margin: 0;
+  font-family:
+    Renogare, Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 400;
+}
+
+.status-group > header span {
+  color: var(--status-muted);
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.status-group ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.status-endpoint {
+  padding: 0.8rem 1rem 0.7rem;
+}
+
+.status-endpoint + .status-endpoint {
+  border-top: 1px solid color-mix(in oklch, var(--status-border) 48%, transparent);
+}
+
+.status-endpoint-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.status-endpoint-identity {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.status-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+}
+
+.status-dot-up {
+  background: var(--status-green);
+}
+
+.status-dot-down {
+  background: var(--status-red);
+}
+
+.status-endpoint h3 {
+  margin: 0;
+  overflow-wrap: break-word;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.status-endpoint-result {
+  flex: 0 0 auto;
+  color: var(--status-green);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.status-endpoint-down .status-endpoint-result {
+  color: var(--status-red);
+}
+
+.status-uptime-bars {
+  display: grid;
+  height: 0.8rem;
+  grid-template-columns: repeat(60, minmax(0, 1fr));
+  gap: 2px;
+  margin-top: 0.65rem;
+}
+
+.status-uptime-bar {
+  min-width: 0;
+  border-radius: 1px;
+}
+
+.status-uptime-bar-up {
+  background: var(--status-green);
+}
+
+.status-uptime-bar-down {
+  background: var(--status-red);
+}
+
+.status-uptime-bar-unknown {
+  background: color-mix(in oklch, var(--status-muted) 18%, transparent);
+}
+
+.status-uptime-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.3rem;
+  color: var(--status-muted);
+  font-size: 0.625rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.status-history {
+  margin-top: 2.25rem;
+}
+
+.status-history h2 {
+  margin: 0;
+  font-family:
+    Renogare, Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+.status-history-empty,
+.status-history ol {
+  margin: 0.75rem 0 0;
+  padding: 0.9rem 0;
+  border-block: 1px solid var(--status-border);
+  color: var(--status-muted);
+  font-size: 0.8125rem;
+}
+
+.status-history ol {
+  list-style: none;
+}
+
+.status-history li + li {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--status-border);
+}
+
+.status-history time {
+  color: var(--status-yellow);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.status-history li p {
+  margin: 0.25rem 0 0;
+  color: var(--status-text);
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+.status-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 1.75rem;
+  color: var(--status-muted);
+  font-size: 0.6875rem;
+}
+
+.status-footer p {
+  margin: 0;
+}
+
+.status-footer a {
+  min-height: 44px;
+}
+
+@media (min-width: 700px) {
+  .status-page {
+    --wallpaper-image: url("/assets/background-1440.png");
+  }
+}
+
+@media (min-width: 1100px) {
+  .status-page {
+    --wallpaper-image: url("/assets/background-1920.png");
+  }
+}
+
+@media (min-width: 1800px) {
+  .status-page {
+    --wallpaper-image: url("/assets/background-2560.png");
+  }
+}
+
+@media (min-width: 2600px) {
+  .status-page {
+    --wallpaper-image: url("/assets/background.png");
+  }
+}
+
+@media (max-width: 560px) {
+  .status-page {
+    padding: 1.25rem 0.75rem 1.5rem;
+  }
+
+  .status-header {
+    margin-bottom: 1.25rem;
+  }
+
+  .status-endpoint {
+    padding-inline: 0.8rem;
+  }
+
+  .status-endpoint-result {
+    font-size: 0.6875rem;
+  }
+
+  .status-uptime-bars {
+    gap: 1px;
+  }
+
+  .status-footer {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+}
+
+@supports (background-image: image-set(url("/assets/background-960.png") 1x)) {
+  .status-page {
+    --wallpaper-image: image-set(
+      url("/assets/background-960.png") 1x,
+      url("/assets/background-1920.png") 2x
+    );
+  }
+
+  @media (min-width: 700px) {
+    .status-page {
+      --wallpaper-image: image-set(
+        url("/assets/background-1440.png") 1x,
+        url("/assets/background-2560.png") 2x
+      );
+    }
+  }
+
+  @media (min-width: 1100px) {
+    .status-page {
+      --wallpaper-image: image-set(
+        url("/assets/background-1920.png") 1x,
+        url("/assets/background.png") 2x
+      );
+    }
+  }
+
+  @media (min-width: 1800px) {
+    .status-page {
+      --wallpaper-image: image-set(
+        url("/assets/background-2560.png") 1x,
+        url("/assets/background.png") 2x
+      );
+    }
   }
 }
