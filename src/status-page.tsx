@@ -200,10 +200,7 @@ export function getMonthlyUptimeSummary(
       30 * dayInMilliseconds
     : false;
 
-  return {
-    days,
-    periodLabel: hasFullHistory ? "Past 30 days" : "Since monitoring began",
-  } as const;
+  return { days, hasFullHistory } as const;
 }
 
 function formatAnnouncementDate(timestamp: string) {
@@ -282,6 +279,13 @@ function EndpointRow({
   const latestResult = getLatestResult(endpoint.results);
   const isHealthy = latestResult?.success === true;
   const monthlySummary = getMonthlyUptimeSummary(history?.events ?? []);
+  const historyLabel = history
+    ? monthlySummary.hasFullHistory
+      ? "Past 30 days"
+      : null
+    : historyUnavailable
+      ? "History unavailable"
+      : "Loading history";
 
   return (
     <li
@@ -316,13 +320,7 @@ function EndpointRow({
       </div>
 
       <div className="status-uptime-meta">
-        <span>
-          {history
-            ? monthlySummary.periodLabel
-            : historyUnavailable
-              ? "History unavailable"
-              : "Loading history"}
-        </span>
+        {historyLabel ? <span>{historyLabel}</span> : null}
         <span>
           {history
             ? `${formatUptimePercentage(history.uptime)} uptime`

@@ -902,6 +902,10 @@ body.status-body {
   font-variant-numeric: tabular-nums;
 }
 
+.status-uptime-meta > :last-child {
+  margin-left: auto;
+}
+
 .status-history {
   margin-top: 2.25rem;
 }

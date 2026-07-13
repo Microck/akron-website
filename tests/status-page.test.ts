@@ -103,7 +103,7 @@ describe("getMonthlyUptimeSummary", () => {
     const summary = getMonthlyUptimeSummary(events, now);
     const reversedSummary = getMonthlyUptimeSummary(events.toReversed(), now);
 
-    expect(summary.periodLabel).toBe("Since monitoring began");
+    expect(summary.hasFullHistory).toBe(false);
     expect(summary.days).toHaveLength(30);
     expect(
       summary.days.slice(0, -1).every(({ status }) => status === "unknown"),
@@ -129,7 +129,7 @@ describe("getMonthlyUptimeSummary", () => {
       now,
     );
 
-    expect(summary.periodLabel).toBe("Past 30 days");
+    expect(summary.hasFullHistory).toBe(true);
     expect(summary.days.at(-3)?.status).toBe("up");
     expect(summary.days.at(-2)).toMatchObject({
       date: "2026-07-12",
@@ -144,7 +144,7 @@ describe("getMonthlyUptimeSummary", () => {
   test("reports unknown days when no event history is available", () => {
     const summary = getMonthlyUptimeSummary([], now);
 
-    expect(summary.periodLabel).toBe("Since monitoring began");
+    expect(summary.hasFullHistory).toBe(false);
     expect(summary.days.every(({ status }) => status === "unknown")).toBe(true);
   });
 });
