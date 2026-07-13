@@ -1,9 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import {
+  formatUptimePercentage,
   formatCheckAge,
+  getMonthlyUptimeSummary,
   getOverallStatus,
-  getUptimeSummary,
   type StatusEndpoint,
+  type StatusEvent,
   type StatusResult,
 } from "../src/status-page";
 
@@ -81,37 +83,68 @@ describe("formatCheckAge", () => {
   });
 });
 
-describe("getUptimeSummary", () => {
-  const result = (success: boolean, minute: number): StatusResult => ({
-    success,
-    timestamp: `2026-07-13T12:${minute.toString().padStart(2, "0")}:00Z`,
-    duration: 25_000_000,
-    status: success ? 200 : 500,
+describe("formatUptimePercentage", () => {
+  test("formats the authoritative Gatus uptime fraction", () => {
+    expect(formatUptimePercentage(1)).toBe("100%");
+    expect(formatUptimePercentage(0.632124)).toBe("63.21%");
+    expect(formatUptimePercentage(0)).toBe("0%");
   });
+});
 
-  test("keeps the newest checks and calculates their success rate", () => {
-    const history = [
-      result(false, 0),
-      result(true, 1),
-      result(true, 2),
-      result(false, 3),
-    ];
-    const summary = getUptimeSummary(history, 3);
-    const reversedSummary = getUptimeSummary(history.toReversed(), 3);
+describe("getMonthlyUptimeSummary", () => {
+  const now = new Date("2026-07-13T15:00:00Z");
+  const events: readonly StatusEvent[] = [
+    { type: "HEALTHY", timestamp: "2026-07-13T13:00:00Z" },
+    { type: "START", timestamp: "2026-07-13T11:00:00Z" },
+    { type: "UNHEALTHY", timestamp: "2026-07-13T11:00:00Z" },
+  ];
 
-    expect(summary.results.map(({ success }) => success)).toEqual([
-      true,
-      true,
-      false,
-    ]);
-    expect(summary.percentage).toBe("66.67%");
+  test("builds 30 UTC daily bars from state transitions in any order", () => {
+    const summary = getMonthlyUptimeSummary(events, now);
+    const reversedSummary = getMonthlyUptimeSummary(events.toReversed(), now);
+
+    expect(summary.periodLabel).toBe("Since monitoring began");
+    expect(summary.days).toHaveLength(30);
+    expect(
+      summary.days.slice(0, -1).every(({ status }) => status === "unknown"),
+    ).toBe(true);
+    expect(summary.days.at(-1)).toMatchObject({
+      date: "2026-07-13",
+      percentage: 50,
+      status: "down",
+    });
     expect(reversedSummary).toEqual(summary);
   });
 
-  test("reports no percentage without monitoring history", () => {
-    expect(getUptimeSummary([])).toEqual({
-      results: [],
-      percentage: null,
+  test("uses green for 100%, amber from 99%, and red below 99%", () => {
+    const summary = getMonthlyUptimeSummary(
+      [
+        { type: "START", timestamp: "2026-06-01T00:00:00Z" },
+        { type: "HEALTHY", timestamp: "2026-06-01T00:00:00Z" },
+        { type: "UNHEALTHY", timestamp: "2026-07-12T12:00:00Z" },
+        { type: "HEALTHY", timestamp: "2026-07-12T12:10:00Z" },
+        { type: "UNHEALTHY", timestamp: "2026-07-13T12:00:00Z" },
+        { type: "HEALTHY", timestamp: "2026-07-13T12:10:00Z" },
+      ],
+      now,
+    );
+
+    expect(summary.periodLabel).toBe("Past 30 days");
+    expect(summary.days.at(-3)?.status).toBe("up");
+    expect(summary.days.at(-2)).toMatchObject({
+      date: "2026-07-12",
+      status: "degraded",
     });
+    expect(summary.days.at(-1)).toMatchObject({
+      date: "2026-07-13",
+      status: "down",
+    });
+  });
+
+  test("reports unknown days when no event history is available", () => {
+    const summary = getMonthlyUptimeSummary([], now);
+
+    expect(summary.periodLabel).toBe("Since monitoring began");
+    expect(summary.days.every(({ status }) => status === "unknown")).toBe(true);
   });
 });

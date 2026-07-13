@@ -866,7 +866,7 @@ body.status-body {
 .status-uptime-bars {
   display: grid;
   height: 0.8rem;
-  grid-template-columns: repeat(60, minmax(0, 1fr));
+  grid-template-columns: repeat(30, minmax(0, 1fr));
   gap: 2px;
   margin-top: 0.65rem;
 }
@@ -878,6 +878,10 @@ body.status-body {
 
 .status-uptime-bar-up {
   background: var(--status-green);
+}
+
+.status-uptime-bar-degraded {
+  background: var(--status-yellow);
 }
 
 .status-uptime-bar-down {

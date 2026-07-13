@@ -20,6 +20,22 @@ export type StatusEndpoint = Readonly<{
   results: readonly StatusResult[];
 }>;
 
+export type StatusEvent = Readonly<{
+  type: "START" | "HEALTHY" | "UNHEALTHY";
+  timestamp: string;
+}>;
+
+type EndpointHistory = Readonly<{
+  uptime: number;
+  events: readonly StatusEvent[];
+}>;
+
+export type DailyUptime = Readonly<{
+  date: string;
+  percentage: number | null;
+  status: "up" | "degraded" | "down" | "unknown";
+}>;
+
 type StatusAnnouncement = Readonly<{
   timestamp: string;
   type: "information" | "none" | "operational" | "outage" | "warning";
@@ -83,26 +99,111 @@ export function formatCheckAge(timestamp: string, now = new Date()) {
   return `${Math.floor(elapsedHours / 24)}d ago`;
 }
 
-export function getUptimeSummary(
-  results: readonly StatusResult[],
-  limit = 60,
+export function formatUptimePercentage(uptime: number) {
+  const percentage = uptime * 100;
+
+  return percentage === 0 || percentage === 100
+    ? `${percentage}%`
+    : `${percentage.toFixed(2)}%`;
+}
+
+const dayInMilliseconds = 24 * 60 * 60 * 1_000;
+
+function startOfUtcDay(date: Date) {
+  return Date.UTC(
+    date.getUTCFullYear(),
+    date.getUTCMonth(),
+    date.getUTCDate(),
+  );
+}
+
+export function getMonthlyUptimeSummary(
+  events: readonly StatusEvent[],
+  now = new Date(),
 ) {
-  const recentResults = sortResultsChronologically(results).slice(-limit);
+  const nowTimestamp = now.getTime();
+  const firstDayTimestamp = startOfUtcDay(now) - 29 * dayInMilliseconds;
+  const sortedEvents = [...events].sort((left, right) => {
+    const timestampDifference =
+      new Date(left.timestamp).getTime() - new Date(right.timestamp).getTime();
 
-  if (recentResults.length === 0) {
-    return { results: recentResults, percentage: null };
-  }
+    if (timestampDifference !== 0) {
+      return timestampDifference;
+    }
 
-  const successfulChecks = recentResults.filter(({ success }) => success).length;
-  const percentage = (successfulChecks / recentResults.length) * 100;
+    // A START event resets the known state before the first result at the same time.
+    return Number(left.type !== "START") - Number(right.type !== "START");
+  });
+  const intervals = sortedEvents.map((event, index) => ({
+    start: new Date(event.timestamp).getTime(),
+    end:
+      index + 1 < sortedEvents.length
+        ? new Date(sortedEvents[index + 1].timestamp).getTime()
+        : nowTimestamp,
+    state:
+      event.type === "HEALTHY"
+        ? "healthy"
+        : event.type === "UNHEALTHY"
+          ? "unhealthy"
+          : "unknown",
+  }));
+
+  const days = Array.from({ length: 30 }, (_, index): DailyUptime => {
+    const dayStart = firstDayTimestamp + index * dayInMilliseconds;
+    const dayEnd = Math.min(dayStart + dayInMilliseconds, nowTimestamp);
+    let monitoredMilliseconds = 0;
+    let healthyMilliseconds = 0;
+
+    // State transitions are the only compact historical data Gatus exposes per day.
+    for (const interval of intervals) {
+      if (
+        interval.state === "unknown" ||
+        interval.end <= dayStart ||
+        interval.start >= dayEnd
+      ) {
+        continue;
+      }
+
+      const duration =
+        Math.min(interval.end, dayEnd) - Math.max(interval.start, dayStart);
+      monitoredMilliseconds += duration;
+      if (interval.state === "healthy") {
+        healthyMilliseconds += duration;
+      }
+    }
+
+    const percentage =
+      monitoredMilliseconds === 0
+        ? null
+        : Math.round((healthyMilliseconds / monitoredMilliseconds) * 10_000) /
+          100;
+    const status =
+      percentage === null
+        ? "unknown"
+        : percentage === 100
+          ? "up"
+          : percentage >= 99
+            ? "degraded"
+            : "down";
+
+    return {
+      date: new Date(dayStart).toISOString().slice(0, 10),
+      percentage,
+      status,
+    };
+  });
+  const monitoringStartedAt = sortedEvents.find(
+    ({ type }) => type === "START",
+  )?.timestamp;
+  const hasFullHistory = monitoringStartedAt
+    ? nowTimestamp - new Date(monitoringStartedAt).getTime() >=
+      30 * dayInMilliseconds
+    : false;
 
   return {
-    results: recentResults,
-    percentage:
-      percentage === 0 || percentage === 100
-        ? `${percentage}%`
-        : `${percentage.toFixed(2)}%`,
-  };
+    days,
+    periodLabel: hasFullHistory ? "Past 30 days" : "Since monitoring began",
+  } as const;
 }
 
 function formatAnnouncementDate(timestamp: string) {
@@ -169,11 +270,18 @@ function StatusSummary({
   );
 }
 
-function EndpointRow({ endpoint }: Readonly<{ endpoint: StatusEndpoint }>) {
-  const uptime = getUptimeSummary(endpoint.results);
-  const latestResult = uptime.results.at(-1);
+function EndpointRow({
+  endpoint,
+  history,
+  historyUnavailable,
+}: Readonly<{
+  endpoint: StatusEndpoint;
+  history?: EndpointHistory;
+  historyUnavailable: boolean;
+}>) {
+  const latestResult = getLatestResult(endpoint.results);
   const isHealthy = latestResult?.success === true;
-  const missingBarCount = 60 - uptime.results.length;
+  const monthlySummary = getMonthlyUptimeSummary(history?.events ?? []);
 
   return (
     <li
@@ -194,21 +302,32 @@ function EndpointRow({ endpoint }: Readonly<{ endpoint: StatusEndpoint }>) {
       </div>
 
       <div className="status-uptime-bars" aria-hidden="true">
-        {Array.from({ length: missingBarCount }, (_, index) => (
-          <span className="status-uptime-bar status-uptime-bar-unknown" key={`empty-${index}`} />
-        ))}
-        {uptime.results.map((result) => (
+        {monthlySummary.days.map((day) => (
           <span
-            className={`status-uptime-bar ${result.success ? "status-uptime-bar-up" : "status-uptime-bar-down"}`}
-            key={result.timestamp}
-            title={`${result.success ? "Operational" : "Failed"} at ${new Date(result.timestamp).toLocaleString()}`}
+            className={`status-uptime-bar status-uptime-bar-${day.status}`}
+            key={day.date}
+            title={`${day.date}: ${
+              day.percentage === null
+                ? "No monitoring data"
+                : `${formatUptimePercentage(day.percentage / 100)} uptime`
+            }`}
           />
         ))}
       </div>
 
       <div className="status-uptime-meta">
-        <span>{uptime.results.length} recent checks</span>
-        <span>{uptime.percentage ? `${uptime.percentage} uptime` : "No history"}</span>
+        <span>
+          {history
+            ? monthlySummary.periodLabel
+            : historyUnavailable
+              ? "History unavailable"
+              : "Loading history"}
+        </span>
+        <span>
+          {history
+            ? `${formatUptimePercentage(history.uptime)} uptime`
+            : "No history"}
+        </span>
       </div>
     </li>
   );
@@ -221,6 +340,10 @@ export function StatusPage() {
   const [announcements, setAnnouncements] = useState<
     readonly StatusAnnouncement[]
   >([]);
+  const [endpointHistories, setEndpointHistories] = useState<
+    Readonly<Record<string, EndpointHistory>>
+  >({});
+  const [historyUnavailable, setHistoryUnavailable] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -229,7 +352,7 @@ export function StatusPage() {
     async function loadStatus() {
       try {
         const [endpointsResponse, configResponse] = await Promise.all([
-          fetch(`${statusApiBase}/endpoints/statuses?page=1&pageSize=60`, {
+          fetch(`${statusApiBase}/endpoints/statuses?page=1&pageSize=1`, {
             signal: abortController.signal,
           }),
           fetch(`${statusApiBase}/config`, { signal: abortController.signal }),
@@ -246,6 +369,52 @@ export function StatusPage() {
         setEndpoints(nextEndpoints);
         setAnnouncements(config.announcements ?? []);
         setErrorMessage(null);
+
+        try {
+          const historyEntries = await Promise.all(
+            nextEndpoints.map(async (endpoint) => {
+              const endpointKey = encodeURIComponent(endpoint.key);
+              const [detailResponse, uptimeResponse] = await Promise.all([
+                fetch(
+                  `${statusApiBase}/endpoints/${endpointKey}/statuses?page=1&pageSize=1`,
+                  { signal: abortController.signal },
+                ),
+                fetch(`${statusApiBase}/endpoints/${endpointKey}/uptimes/30d`, {
+                  signal: abortController.signal,
+                }),
+              ]);
+
+              if (!detailResponse.ok || !uptimeResponse.ok) {
+                throw new Error("Monthly history could not be loaded.");
+              }
+
+              const detail = (await detailResponse.json()) as StatusEndpoint & {
+                events?: readonly StatusEvent[];
+              };
+              const uptime = Number(await uptimeResponse.text());
+
+              if (!Number.isFinite(uptime) || uptime < 0 || uptime > 1) {
+                throw new Error("Monthly history returned an invalid uptime.");
+              }
+
+              return [
+                endpoint.key,
+                { uptime, events: detail.events ?? [] },
+              ] as const;
+            }),
+          );
+
+          setEndpointHistories(Object.fromEntries(historyEntries));
+          setHistoryUnavailable(false);
+        } catch (error: unknown) {
+          if (error instanceof DOMException && error.name === "AbortError") {
+            return;
+          }
+
+          // Current health remains useful even if historical aggregation fails.
+          setEndpointHistories({});
+          setHistoryUnavailable(true);
+        }
       } catch (error: unknown) {
         if (error instanceof DOMException && error.name === "AbortError") {
           return;
@@ -329,7 +498,12 @@ export function StatusPage() {
               </header>
               <ul>
                 {group.endpoints.map((endpoint) => (
-                  <EndpointRow endpoint={endpoint} key={endpoint.key} />
+                  <EndpointRow
+                    endpoint={endpoint}
+                    history={endpointHistories[endpoint.key]}
+                    historyUnavailable={historyUnavailable}
+                    key={endpoint.key}
+                  />
                 ))}
               </ul>
             </article>
