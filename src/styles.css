@@ -763,7 +763,7 @@ body.status-body {
 
 .status-groups {
   margin-top: 1.25rem;
-  overflow: hidden;
+  overflow: visible;
   border: 1px solid var(--status-border);
   border-radius: 0.45rem;
   background: var(--status-paper);
@@ -786,6 +786,10 @@ body.status-body {
   padding: 0.65rem 1rem;
   border-bottom: 1px solid color-mix(in oklch, var(--status-border) 62%, transparent);
   background: oklch(94% 0.04 72 / 62%);
+}
+
+.status-group:first-child > header {
+  border-radius: 0.4rem 0.4rem 0 0;
 }
 
 .status-group > header h2 {
@@ -872,8 +876,23 @@ body.status-body {
 }
 
 .status-uptime-bar {
+  position: relative;
   min-width: 0;
+  padding: 0;
+  border: 0;
   border-radius: 1px;
+  appearance: none;
+  cursor: help;
+}
+
+.status-uptime-bar:hover,
+.status-uptime-bar:focus {
+  z-index: 20;
+}
+
+.status-uptime-bar:focus-visible {
+  outline: 2px solid var(--status-text);
+  outline-offset: 2px;
 }
 
 .status-uptime-bar-up {
@@ -890,6 +909,110 @@ body.status-body {
 
 .status-uptime-bar-unknown {
   background: color-mix(in oklch, var(--status-muted) 18%, transparent);
+}
+
+.status-uptime-tooltip {
+  --tooltip-arrow-position: 50%;
+
+  position: absolute;
+  bottom: calc(100% + 0.55rem);
+  left: 50%;
+  display: block;
+  width: min(13.5rem, calc(100vw - 3rem));
+  padding: 0.65rem;
+  border-radius: 0.35rem;
+  color: var(--status-paper-strong);
+  background: oklch(30% 0.04 38 / 98%);
+  box-shadow:
+    0 0 0 1px oklch(0% 0 0 / 10%),
+    0 0.45rem 1.25rem oklch(25% 0.04 38 / 24%);
+  font-size: 0.625rem;
+  line-height: 1.35;
+  text-align: left;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-50%);
+}
+
+.status-uptime-tooltip::after {
+  position: absolute;
+  top: 100%;
+  left: var(--tooltip-arrow-position);
+  border: 0.3rem solid transparent;
+  border-top-color: oklch(30% 0.04 38 / 98%);
+  content: "";
+  transform: translateX(-50%);
+}
+
+.status-uptime-bar:hover .status-uptime-tooltip,
+.status-uptime-bar:focus .status-uptime-tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+.status-uptime-bar:nth-child(-n + 5) .status-uptime-tooltip {
+  --tooltip-arrow-position: 0.35rem;
+
+  left: 0;
+  transform: none;
+}
+
+.status-uptime-bar:nth-last-child(-n + 5) .status-uptime-tooltip {
+  --tooltip-arrow-position: calc(100% - 0.35rem);
+
+  right: 0;
+  left: auto;
+  transform: none;
+}
+
+.status-uptime-tooltip-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.status-uptime-tooltip-heading strong {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status-uptime-tooltip-heading > span {
+  color: color-mix(in oklch, var(--status-paper-strong) 72%, transparent);
+  white-space: nowrap;
+}
+
+.status-hourly-bars {
+  display: grid;
+  height: 0.65rem;
+  grid-template-columns: repeat(24, minmax(0, 1fr));
+  gap: 1px;
+  margin-top: 0.55rem;
+}
+
+.status-hourly-bar {
+  min-width: 0;
+  border-radius: 1px;
+}
+
+.status-hourly-axis {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  margin-top: 0.2rem;
+  color: color-mix(in oklch, var(--status-paper-strong) 55%, transparent);
+  font-size: 0.5625rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.status-hourly-axis > :nth-child(2) {
+  text-align: center;
+}
+
+.status-hourly-axis > :last-child {
+  text-align: right;
 }
 
 .status-uptime-meta {
@@ -1011,6 +1134,22 @@ body.status-body {
 
   .status-uptime-bars {
     gap: 1px;
+  }
+
+  .status-uptime-bar:nth-child(-n + 11) .status-uptime-tooltip {
+    --tooltip-arrow-position: 0.35rem;
+
+    right: auto;
+    left: 0;
+    transform: none;
+  }
+
+  .status-uptime-bar:nth-last-child(-n + 11) .status-uptime-tooltip {
+    --tooltip-arrow-position: calc(100% - 0.35rem);
+
+    right: 0;
+    left: auto;
+    transform: none;
   }
 
   .status-footer {
