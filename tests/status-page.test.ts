@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   formatUptimePercentage,
   formatCheckAge,
+  formatUptimeDate,
   getMonthlyUptimeSummary,
   getOverallStatus,
   type StatusEndpoint,
@@ -91,6 +92,12 @@ describe("formatUptimePercentage", () => {
   });
 });
 
+describe("formatUptimeDate", () => {
+  test("shows the complete UTC date used by the hourly tooltip", () => {
+    expect(formatUptimeDate("2026-07-13")).toBe("July 13, 2026");
+  });
+});
+
 describe("getMonthlyUptimeSummary", () => {
   const now = new Date("2026-07-13T15:00:00Z");
   const events: readonly StatusEvent[] = [
@@ -113,6 +120,23 @@ describe("getMonthlyUptimeSummary", () => {
       percentage: 50,
       status: "down",
     });
+    expect(summary.days.at(-1)?.hours).toHaveLength(24);
+    expect(summary.days.at(-1)?.hours[11]).toEqual({
+      hour: 11,
+      percentage: 0,
+      status: "down",
+    });
+    expect(summary.days.at(-1)?.hours[13]).toEqual({
+      hour: 13,
+      percentage: 100,
+      status: "up",
+    });
+    expect(
+      summary.days
+        .at(-1)
+        ?.hours.slice(15)
+        .every(({ status }) => status === "unknown"),
+    ).toBe(true);
     expect(reversedSummary).toEqual(summary);
   });
 
@@ -134,6 +158,11 @@ describe("getMonthlyUptimeSummary", () => {
     expect(summary.days.at(-2)).toMatchObject({
       date: "2026-07-12",
       status: "degraded",
+    });
+    expect(summary.days.at(-2)?.hours[12]).toEqual({
+      hour: 12,
+      percentage: 83.33,
+      status: "down",
     });
     expect(summary.days.at(-1)).toMatchObject({
       date: "2026-07-13",

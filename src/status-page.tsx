@@ -30,10 +30,19 @@ type EndpointHistory = Readonly<{
   events: readonly StatusEvent[];
 }>;
 
+type UptimeStatus = "up" | "degraded" | "down" | "unknown";
+
+export type HourlyUptime = Readonly<{
+  hour: number;
+  percentage: number | null;
+  status: UptimeStatus;
+}>;
+
 export type DailyUptime = Readonly<{
   date: string;
   percentage: number | null;
-  status: "up" | "degraded" | "down" | "unknown";
+  status: UptimeStatus;
+  hours: readonly HourlyUptime[];
 }>;
 
 type StatusAnnouncement = Readonly<{
@@ -107,7 +116,23 @@ export function formatUptimePercentage(uptime: number) {
     : `${percentage.toFixed(2)}%`;
 }
 
+export function formatUptimeDate(date: string) {
+  return new Intl.DateTimeFormat("en-US", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(`${date}T00:00:00Z`));
+}
+
 const dayInMilliseconds = 24 * 60 * 60 * 1_000;
+const hourInMilliseconds = 60 * 60 * 1_000;
+
+type UptimeInterval = Readonly<{
+  start: number;
+  end: number;
+  state: "healthy" | "unhealthy" | "unknown";
+}>;
 
 function startOfUtcDay(date: Date) {
   return Date.UTC(
@@ -115,6 +140,49 @@ function startOfUtcDay(date: Date) {
     date.getUTCMonth(),
     date.getUTCDate(),
   );
+}
+
+function summarizeUptime(
+  intervals: readonly UptimeInterval[],
+  periodStart: number,
+  periodEnd: number,
+) {
+  let monitoredMilliseconds = 0;
+  let healthyMilliseconds = 0;
+
+  for (const interval of intervals) {
+    if (
+      interval.state === "unknown" ||
+      interval.end <= periodStart ||
+      interval.start >= periodEnd
+    ) {
+      continue;
+    }
+
+    const duration =
+      Math.min(interval.end, periodEnd) -
+      Math.max(interval.start, periodStart);
+    monitoredMilliseconds += duration;
+    if (interval.state === "healthy") {
+      healthyMilliseconds += duration;
+    }
+  }
+
+  const percentage =
+    monitoredMilliseconds === 0
+      ? null
+      : Math.round((healthyMilliseconds / monitoredMilliseconds) * 10_000) /
+        100;
+  const status: UptimeStatus =
+    percentage === null
+      ? "unknown"
+      : percentage === 100
+        ? "up"
+        : percentage >= 99
+          ? "degraded"
+          : "down";
+
+  return { percentage, status } as const;
 }
 
 export function getMonthlyUptimeSummary(
@@ -134,62 +202,40 @@ export function getMonthlyUptimeSummary(
     // A START event resets the known state before the first result at the same time.
     return Number(left.type !== "START") - Number(right.type !== "START");
   });
-  const intervals = sortedEvents.map((event, index) => ({
-    start: new Date(event.timestamp).getTime(),
-    end:
-      index + 1 < sortedEvents.length
-        ? new Date(sortedEvents[index + 1].timestamp).getTime()
-        : nowTimestamp,
-    state:
-      event.type === "HEALTHY"
-        ? "healthy"
-        : event.type === "UNHEALTHY"
-          ? "unhealthy"
-          : "unknown",
-  }));
+  const intervals: readonly UptimeInterval[] = sortedEvents.map(
+    (event, index) => ({
+      start: new Date(event.timestamp).getTime(),
+      end:
+        index + 1 < sortedEvents.length
+          ? new Date(sortedEvents[index + 1].timestamp).getTime()
+          : nowTimestamp,
+      state:
+        event.type === "HEALTHY"
+          ? "healthy"
+          : event.type === "UNHEALTHY"
+            ? "unhealthy"
+            : "unknown",
+    }),
+  );
 
   const days = Array.from({ length: 30 }, (_, index): DailyUptime => {
     const dayStart = firstDayTimestamp + index * dayInMilliseconds;
     const dayEnd = Math.min(dayStart + dayInMilliseconds, nowTimestamp);
-    let monitoredMilliseconds = 0;
-    let healthyMilliseconds = 0;
+    const dailyUptime = summarizeUptime(intervals, dayStart, dayEnd);
+    const hours = Array.from({ length: 24 }, (_, hour): HourlyUptime => {
+      const hourStart = dayStart + hour * hourInMilliseconds;
+      const hourEnd = Math.min(hourStart + hourInMilliseconds, dayEnd);
 
-    // State transitions are the only compact historical data Gatus exposes per day.
-    for (const interval of intervals) {
-      if (
-        interval.state === "unknown" ||
-        interval.end <= dayStart ||
-        interval.start >= dayEnd
-      ) {
-        continue;
-      }
-
-      const duration =
-        Math.min(interval.end, dayEnd) - Math.max(interval.start, dayStart);
-      monitoredMilliseconds += duration;
-      if (interval.state === "healthy") {
-        healthyMilliseconds += duration;
-      }
-    }
-
-    const percentage =
-      monitoredMilliseconds === 0
-        ? null
-        : Math.round((healthyMilliseconds / monitoredMilliseconds) * 10_000) /
-          100;
-    const status =
-      percentage === null
-        ? "unknown"
-        : percentage === 100
-          ? "up"
-          : percentage >= 99
-            ? "degraded"
-            : "down";
+      return {
+        hour,
+        ...summarizeUptime(intervals, hourStart, hourEnd),
+      };
+    });
 
     return {
       date: new Date(dayStart).toISOString().slice(0, 10),
-      percentage,
-      status,
+      ...dailyUptime,
+      hours,
     };
   });
   const monitoringStartedAt = sortedEvents.find(
@@ -305,18 +351,67 @@ function EndpointRow({
         </strong>
       </div>
 
-      <div className="status-uptime-bars" aria-hidden="true">
-        {monthlySummary.days.map((day) => (
-          <span
-            className={`status-uptime-bar status-uptime-bar-${day.status}`}
-            key={day.date}
-            title={`${day.date}: ${
-              day.percentage === null
-                ? "No monitoring data"
-                : `${formatUptimePercentage(day.percentage / 100)} uptime`
-            }`}
-          />
-        ))}
+      <div className="status-uptime-bars">
+        {monthlySummary.days.map((day) => {
+          const formattedDate = formatUptimeDate(day.date);
+          const dailyUptime =
+            day.percentage === null
+              ? "No monitoring data"
+              : `${formatUptimePercentage(day.percentage / 100)} uptime`;
+          const tooltipId = `${endpoint.key}-${day.date}-hourly-uptime`;
+
+          return (
+            <span
+              aria-describedby={day.percentage === null ? undefined : tooltipId}
+              aria-hidden={day.percentage === null ? true : undefined}
+              aria-label={
+                day.percentage === null
+                  ? undefined
+                  : `${formattedDate}: ${dailyUptime}`
+              }
+              className={`status-uptime-bar status-uptime-bar-${day.status}`}
+              key={day.date}
+              role={day.percentage === null ? undefined : "img"}
+              tabIndex={day.percentage === null ? undefined : 0}
+            >
+              <span
+                className="status-uptime-tooltip"
+                id={tooltipId}
+                role="tooltip"
+              >
+                <span className="status-uptime-tooltip-heading">
+                  <strong>{formattedDate}</strong>
+                  <span>{dailyUptime}</span>
+                </span>
+                <span className="status-hourly-bars" aria-hidden="true">
+                  {day.hours.map((hour) => (
+                    <span
+                      className={`status-hourly-bar status-uptime-bar-${hour.status}`}
+                      key={hour.hour}
+                    />
+                  ))}
+                </span>
+                <span className="status-hourly-axis" aria-hidden="true">
+                  <span>00:00</span>
+                  <span>UTC</span>
+                  <span>23:00</span>
+                </span>
+                <span className="sr-only">
+                  {day.hours
+                    .map(
+                      (hour) =>
+                        `${hour.hour.toString().padStart(2, "0")}:00: ${
+                          hour.percentage === null
+                            ? "no monitoring data"
+                            : `${formatUptimePercentage(hour.percentage / 100)} uptime`
+                        }`,
+                    )
+                    .join(". ")}
+                </span>
+              </span>
+            </span>
+          );
+        })}
       </div>
 
       <div className="status-uptime-meta">
