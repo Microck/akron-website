@@ -1,6 +1,16 @@
 import { describe, expect, test } from "bun:test";
 import vercelConfig from "../vercel.json";
 
+describe("Vercel public redirects", () => {
+  test("sends the branded Discord route to Akron's permanent invite", () => {
+    expect(vercelConfig.redirects).toContainEqual({
+      source: "/discord",
+      destination: "https://discord.gg/g28jCgdhFB",
+      permanent: false
+    });
+  });
+});
+
 describe("Vercel upload rewrites", () => {
   test("routes branded multi-image capture URLs to their public R2 objects", () => {
     expect(vercelConfig.rewrites).toContainEqual({

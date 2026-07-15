@@ -1,4 +1,11 @@
 {
+  "redirects": [
+    {
+      "source": "/discord",
+      "destination": "https://discord.gg/g28jCgdhFB",
+      "permanent": false
+    }
+  ],
   "headers": [
     {
       "source": "/",
