@@ -1269,6 +1269,46 @@ body.status-body {
     transform: none;
   }
 
+  .status-uptime-bar:nth-last-child(-n + 4)
+    .status-hourly-bar:nth-child(1)
+    .status-minute-tooltip {
+    --minute-tooltip-arrow-position: 2.75rem;
+
+    left: -2.5rem;
+  }
+
+  .status-uptime-bar:nth-last-child(-n + 4)
+    .status-hourly-bar:nth-child(2)
+    .status-minute-tooltip {
+    --minute-tooltip-arrow-position: 3.25rem;
+
+    left: -3rem;
+  }
+
+  .status-uptime-bar:nth-last-child(-n + 4)
+    .status-hourly-bar:nth-child(3)
+    .status-minute-tooltip {
+    --minute-tooltip-arrow-position: 3.75rem;
+
+    left: -3.5rem;
+  }
+
+  .status-uptime-bar:nth-last-child(-n + 4)
+    .status-hourly-bar:nth-child(4)
+    .status-minute-tooltip {
+    --minute-tooltip-arrow-position: 4.25rem;
+
+    left: -4rem;
+  }
+
+  .status-uptime-bar:nth-last-child(-n + 4)
+    .status-hourly-bar:nth-child(5)
+    .status-minute-tooltip {
+    --minute-tooltip-arrow-position: 4.75rem;
+
+    left: -4.5rem;
+  }
+
   .status-footer {
     align-items: flex-start;
     flex-direction: column;
