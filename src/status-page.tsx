@@ -38,6 +38,11 @@ export type HourlyUptime = Readonly<{
   status: UptimeStatus;
 }>;
 
+export type MinuteUptime = Readonly<{
+  minute: number;
+  status: UptimeStatus;
+}>;
+
 export type DailyUptime = Readonly<{
   date: string;
   percentage: number | null;
@@ -127,6 +132,11 @@ export function formatUptimeDate(date: string) {
 
 const dayInMilliseconds = 24 * 60 * 60 * 1_000;
 const hourInMilliseconds = 60 * 60 * 1_000;
+const checkIntervalInMilliseconds = 60 * 1_000;
+const hourlyDegradedAfterMilliseconds = checkIntervalInMilliseconds;
+const hourlyDownAfterMilliseconds = 5 * checkIntervalInMilliseconds;
+const dailyDegradedAfterMilliseconds = 2 * checkIntervalInMilliseconds;
+const dailyDownAfterMilliseconds = 15 * checkIntervalInMilliseconds;
 
 type UptimeInterval = Readonly<{
   start: number;
@@ -140,6 +150,40 @@ function startOfUtcDay(date: Date) {
     date.getUTCMonth(),
     date.getUTCDate(),
   );
+}
+
+function buildUptimeIntervals(
+  events: readonly StatusEvent[],
+  nowTimestamp: number,
+) {
+  const sortedEvents = [...events].sort((left, right) => {
+    const timestampDifference =
+      new Date(left.timestamp).getTime() - new Date(right.timestamp).getTime();
+
+    if (timestampDifference !== 0) {
+      return timestampDifference;
+    }
+
+    // A START event resets the known state before the first result at the same time.
+    return Number(left.type !== "START") - Number(right.type !== "START");
+  });
+  const intervals: readonly UptimeInterval[] = sortedEvents.map(
+    (event, index) => ({
+      start: new Date(event.timestamp).getTime(),
+      end:
+        index + 1 < sortedEvents.length
+          ? new Date(sortedEvents[index + 1].timestamp).getTime()
+          : nowTimestamp,
+      state:
+        event.type === "HEALTHY"
+          ? "healthy"
+          : event.type === "UNHEALTHY"
+            ? "unhealthy"
+            : "unknown",
+    }),
+  );
+
+  return { intervals, sortedEvents } as const;
 }
 
 function summarizeUptime(
@@ -168,21 +212,76 @@ function summarizeUptime(
     }
   }
 
+  const unhealthyMilliseconds = monitoredMilliseconds - healthyMilliseconds;
   const percentage =
     monitoredMilliseconds === 0
       ? null
       : Math.round((healthyMilliseconds / monitoredMilliseconds) * 10_000) /
         100;
-  const status: UptimeStatus =
-    percentage === null
-      ? "unknown"
-      : percentage === 100
-        ? "up"
-        : percentage >= 99
-          ? "degraded"
-          : "down";
 
-  return { percentage, status } as const;
+  return {
+    monitoredMilliseconds,
+    unhealthyMilliseconds,
+    percentage,
+  } as const;
+}
+
+function getDurationStatus({
+  monitoredMilliseconds,
+  unhealthyMilliseconds,
+  degradedAfterMilliseconds,
+  downAfterMilliseconds,
+}: Readonly<{
+  monitoredMilliseconds: number;
+  unhealthyMilliseconds: number;
+  degradedAfterMilliseconds: number;
+  downAfterMilliseconds: number;
+}>): UptimeStatus {
+  // A period cannot be called healthy before it has been observed for at
+  // least as long as the first downtime threshold.
+  if (monitoredMilliseconds < degradedAfterMilliseconds) {
+    return "unknown";
+  }
+
+  if (unhealthyMilliseconds >= downAfterMilliseconds) {
+    return "down";
+  }
+
+  return unhealthyMilliseconds >= degradedAfterMilliseconds
+    ? "degraded"
+    : "up";
+}
+
+export function getMinuteUptimeSummary(
+  events: readonly StatusEvent[],
+  date: string,
+  hour: number,
+  now = new Date(),
+) {
+  const nowTimestamp = now.getTime();
+  const hourStart = new Date(
+    `${date}T${hour.toString().padStart(2, "0")}:00:00Z`,
+  ).getTime();
+  const hourEnd = Math.min(hourStart + hourInMilliseconds, nowTimestamp);
+  const { intervals } = buildUptimeIntervals(events, nowTimestamp);
+
+  return Array.from({ length: 60 }, (_, minute): MinuteUptime => {
+    const minuteStart = hourStart + minute * checkIntervalInMilliseconds;
+    const minuteEnd = Math.min(
+      minuteStart + checkIntervalInMilliseconds,
+      hourEnd,
+    );
+
+    const minuteUptime = summarizeUptime(intervals, minuteStart, minuteEnd);
+    const status: UptimeStatus =
+      minuteUptime.monitoredMilliseconds === 0
+        ? "unknown"
+        : minuteUptime.unhealthyMilliseconds > 0
+          ? "down"
+          : "up";
+
+    return { minute, status };
+  });
 }
 
 export function getMonthlyUptimeSummary(
@@ -191,50 +290,43 @@ export function getMonthlyUptimeSummary(
 ) {
   const nowTimestamp = now.getTime();
   const firstDayTimestamp = startOfUtcDay(now) - 29 * dayInMilliseconds;
-  const sortedEvents = [...events].sort((left, right) => {
-    const timestampDifference =
-      new Date(left.timestamp).getTime() - new Date(right.timestamp).getTime();
-
-    if (timestampDifference !== 0) {
-      return timestampDifference;
-    }
-
-    // A START event resets the known state before the first result at the same time.
-    return Number(left.type !== "START") - Number(right.type !== "START");
-  });
-  const intervals: readonly UptimeInterval[] = sortedEvents.map(
-    (event, index) => ({
-      start: new Date(event.timestamp).getTime(),
-      end:
-        index + 1 < sortedEvents.length
-          ? new Date(sortedEvents[index + 1].timestamp).getTime()
-          : nowTimestamp,
-      state:
-        event.type === "HEALTHY"
-          ? "healthy"
-          : event.type === "UNHEALTHY"
-            ? "unhealthy"
-            : "unknown",
-    }),
+  const { intervals, sortedEvents } = buildUptimeIntervals(
+    events,
+    nowTimestamp,
   );
-
   const days = Array.from({ length: 30 }, (_, index): DailyUptime => {
     const dayStart = firstDayTimestamp + index * dayInMilliseconds;
     const dayEnd = Math.min(dayStart + dayInMilliseconds, nowTimestamp);
     const dailyUptime = summarizeUptime(intervals, dayStart, dayEnd);
+    const date = new Date(dayStart).toISOString().slice(0, 10);
+    // Color is based on cumulative downtime, not the number of transitions.
+    // Brief separate blips therefore add only their real duration.
+    const dailyStatus = getDurationStatus({
+      ...dailyUptime,
+      degradedAfterMilliseconds: dailyDegradedAfterMilliseconds,
+      downAfterMilliseconds: dailyDownAfterMilliseconds,
+    });
     const hours = Array.from({ length: 24 }, (_, hour): HourlyUptime => {
       const hourStart = dayStart + hour * hourInMilliseconds;
       const hourEnd = Math.min(hourStart + hourInMilliseconds, dayEnd);
 
+      const hourlyUptime = summarizeUptime(intervals, hourStart, hourEnd);
+
       return {
         hour,
-        ...summarizeUptime(intervals, hourStart, hourEnd),
+        percentage: hourlyUptime.percentage,
+        status: getDurationStatus({
+          ...hourlyUptime,
+          degradedAfterMilliseconds: hourlyDegradedAfterMilliseconds,
+          downAfterMilliseconds: hourlyDownAfterMilliseconds,
+        }),
       };
     });
 
     return {
-      date: new Date(dayStart).toISOString().slice(0, 10),
-      ...dailyUptime,
+      date,
+      percentage: dailyUptime.percentage,
+      status: dailyStatus,
       hours,
     };
   });
@@ -322,6 +414,9 @@ function EndpointRow({
   history?: EndpointHistory;
   historyUnavailable: boolean;
 }>) {
+  const [activeMinuteTooltipId, setActiveMinuteTooltipId] = useState<
+    string | null
+  >(null);
   const latestResult = getLatestResult(endpoint.results);
   const isHealthy = latestResult?.success === true;
   const monthlySummary = getMonthlyUptimeSummary(history?.events ?? []);
@@ -362,7 +457,6 @@ function EndpointRow({
 
           return (
             <span
-              aria-describedby={day.percentage === null ? undefined : tooltipId}
               aria-hidden={day.percentage === null ? true : undefined}
               aria-label={
                 day.percentage === null
@@ -371,42 +465,129 @@ function EndpointRow({
               }
               className={`status-uptime-bar status-uptime-bar-${day.status}`}
               key={day.date}
-              role={day.percentage === null ? undefined : "img"}
+              role={day.percentage === null ? undefined : "group"}
               tabIndex={day.percentage === null ? undefined : 0}
             >
               <span
+                aria-label={`Hourly uptime for ${formattedDate}`}
                 className="status-uptime-tooltip"
                 id={tooltipId}
-                role="tooltip"
+                role="group"
               >
                 <span className="status-uptime-tooltip-heading">
                   <strong>{formattedDate}</strong>
                   <span>{dailyUptime}</span>
                 </span>
-                <span className="status-hourly-bars" aria-hidden="true">
-                  {day.hours.map((hour) => (
-                    <span
-                      className={`status-hourly-bar status-uptime-bar-${hour.status}`}
-                      key={hour.hour}
-                    />
-                  ))}
+                <span className="status-hourly-bars">
+                  {day.hours.map((hour) => {
+                    const hourText = hour.hour.toString().padStart(2, "0");
+                    const hourlyUptime =
+                      hour.percentage === null
+                        ? "No monitoring data"
+                        : `${formatUptimePercentage(hour.percentage / 100)} uptime`;
+                    const minuteTooltipId = `${endpoint.key}-${day.date}-${hourText}-minute-uptime`;
+                    const isMinuteTooltipActive =
+                      activeMinuteTooltipId === minuteTooltipId;
+                    const minutes = isMinuteTooltipActive
+                      ? getMinuteUptimeSummary(
+                          history?.events ?? [],
+                          day.date,
+                          hour.hour,
+                        )
+                      : [];
+
+                    if (hour.percentage === null) {
+                      return (
+                        <span
+                          aria-hidden="true"
+                          className={`status-hourly-bar status-uptime-bar-${hour.status}`}
+                          key={hour.hour}
+                        />
+                      );
+                    }
+
+                    return (
+                      <span
+                        aria-describedby={
+                          isMinuteTooltipActive ? minuteTooltipId : undefined
+                        }
+                        aria-label={`${hourText}:00 UTC: ${hourlyUptime}`}
+                        className={`status-hourly-bar status-uptime-bar-${hour.status}`}
+                        key={hour.hour}
+                        onBlur={(event) => {
+                          if (!event.currentTarget.matches(":hover")) {
+                            setActiveMinuteTooltipId(null);
+                          }
+                        }}
+                        onFocus={() =>
+                          setActiveMinuteTooltipId(minuteTooltipId)
+                        }
+                        onMouseEnter={() =>
+                          setActiveMinuteTooltipId(minuteTooltipId)
+                        }
+                        onMouseLeave={(event) => {
+                          if (document.activeElement !== event.currentTarget) {
+                            setActiveMinuteTooltipId(null);
+                          }
+                        }}
+                        role="group"
+                        tabIndex={0}
+                      >
+                        {isMinuteTooltipActive ? (
+                          <span
+                            className="status-minute-tooltip"
+                            id={minuteTooltipId}
+                            role="tooltip"
+                          >
+                            <span className="status-uptime-tooltip-heading">
+                              <strong>{hourText}:00 UTC</strong>
+                              <span>{hourlyUptime}</span>
+                            </span>
+                            <span
+                              className="status-minute-bars"
+                              aria-hidden="true"
+                            >
+                              {minutes.map((minute) => (
+                                <span
+                                  className={`status-minute-bar status-uptime-bar-${minute.status}`}
+                                  key={minute.minute}
+                                />
+                              ))}
+                            </span>
+                            <span
+                              className="status-minute-axis"
+                              aria-hidden="true"
+                            >
+                              <span>:00</span>
+                              <span>minute</span>
+                              <span>:59</span>
+                            </span>
+                            <span className="sr-only">
+                              {minutes
+                                .map(
+                                  (minute) =>
+                                    `${hourText}:${minute.minute.toString().padStart(2, "0")}: ${
+                                      minute.status === "unknown"
+                                        ? "no monitoring data"
+                                        : minute.status === "up"
+                                          ? "operational"
+                                          : minute.status === "degraded"
+                                            ? "degraded"
+                                            : "outage"
+                                    }`,
+                                )
+                                .join(". ")}
+                            </span>
+                          </span>
+                        ) : null}
+                      </span>
+                    );
+                  })}
                 </span>
                 <span className="status-hourly-axis" aria-hidden="true">
                   <span>00:00</span>
                   <span>UTC</span>
                   <span>23:00</span>
-                </span>
-                <span className="sr-only">
-                  {day.hours
-                    .map(
-                      (hour) =>
-                        `${hour.hour.toString().padStart(2, "0")}:00: ${
-                          hour.percentage === null
-                            ? "no monitoring data"
-                            : `${formatUptimePercentage(hour.percentage / 100)} uptime`
-                        }`,
-                    )
-                    .join(". ")}
                 </span>
               </span>
             </span>

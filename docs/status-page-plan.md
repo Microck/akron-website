@@ -206,12 +206,28 @@ and incident announcements.
 | Documentation | HTTP 200 and the Akron documentation title marker |
 | Raw download | Exact HTTP 307 without following the redirect |
 | Olympus install | Exact HTTP 307 without following the redirect |
-| Community Pack Catalog | HTTP 200, format `akron-community-pack-index-v2`, version 2, and a packs field |
+| Community Pack Catalog | HTTP 200, format `akron-community-pack-index-v3`, version 3, and a packs field |
 | Community Pack Uploads | HTTP 200 plus challenge terms, accepted sections, and limits fields |
 | Discord Platform API | HTTP 200 and the expected Discord Gateway URL |
 
 The upload challenge is not a deep health check today. It returns static
 capability data without proving D1 or R2 availability.
+
+## Uptime Bar Severity
+
+Bar colors use cumulative unhealthy duration within each displayed period.
+Separate outages add their exact durations; they are not rounded up or counted
+as incidents. A period remains unknown until its monitoring coverage reaches
+the yellow threshold, which prevents partial periods from showing a misleading
+green state.
+
+| Period | Green | Yellow | Red |
+| --- | --- | --- | --- |
+| Minute | Healthy | Not used | Any unhealthy duration |
+| Hour | Less than 1 minute down | 1 to less than 5 minutes down | 5 minutes or more down |
+| Day | Less than 2 minutes down | 2 to less than 15 minutes down | 15 minutes or more down |
+
+The tooltip percentage remains the exact duration-based uptime for the period.
 
 ## Deployment
 
