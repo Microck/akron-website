@@ -217,9 +217,10 @@ capability data without proving D1 or R2 availability.
 
 Bar colors use cumulative unhealthy duration within each displayed period.
 Separate outages add their exact durations; they are not rounded up or counted
-as incidents. A period remains unknown until its monitoring coverage reaches
-the yellow threshold, which prevents partial periods from showing a misleading
-green state.
+as incidents. Hours and days remain unknown until monitoring coverage reaches
+their yellow threshold, which prevents partial periods from showing a
+misleading green state. A minute remains unknown only when it has no monitoring
+coverage.
 
 | Period | Green | Yellow | Red |
 | --- | --- | --- | --- |

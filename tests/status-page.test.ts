@@ -4,6 +4,7 @@ import {
   formatUptimePercentage,
   formatCheckAge,
   formatUptimeDate,
+  getAdjacentHourIndex,
   getMinuteUptimeSummary,
   getMonthlyUptimeSummary,
   getOverallStatus,
@@ -97,6 +98,32 @@ describe("formatUptimePercentage", () => {
 describe("formatUptimeDate", () => {
   test("shows the complete UTC date used by the hourly tooltip", () => {
     expect(formatUptimeDate("2026-07-13")).toBe("July 13, 2026");
+  });
+});
+
+describe("getAdjacentHourIndex", () => {
+  test("moves between hours with wrapping arrow-key navigation", () => {
+    expect(
+      getAdjacentHourIndex({
+        currentIndex: 0,
+        hourCount: 24,
+        key: "ArrowLeft",
+      }),
+    ).toBe(23);
+    expect(
+      getAdjacentHourIndex({
+        currentIndex: 23,
+        hourCount: 24,
+        key: "ArrowRight",
+      }),
+    ).toBe(0);
+    expect(
+      getAdjacentHourIndex({
+        currentIndex: 10,
+        hourCount: 24,
+        key: "Tab",
+      }),
+    ).toBeNull();
   });
 });
 
@@ -257,12 +284,15 @@ describe("getMonthlyUptimeSummary", () => {
 describe("Gatus catalog contract", () => {
   test("monitors the catalog format consumed by current Akron releases", () => {
     const config = readFileSync("ops/gatus/config.yaml", "utf8");
+    const catalogConfig = config.match(
+      /  - name: Community Pack Catalog[\s\S]*?(?=\n  - name:|$)/,
+    )?.[0];
 
-    expect(config).toContain(
+    expect(catalogConfig).toContain(
       '"[BODY].format == akron-community-pack-index-v3"',
     );
-    expect(config).toContain('"[BODY].version == 3"');
-    expect(config).not.toContain("akron-community-pack-index-v2");
+    expect(catalogConfig).toContain('"[BODY].version == 3"');
+    expect(catalogConfig).not.toContain("akron-community-pack-index-v2");
   });
 });
 

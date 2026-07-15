@@ -130,6 +130,29 @@ export function formatUptimeDate(date: string) {
   }).format(new Date(`${date}T00:00:00Z`));
 }
 
+export function getAdjacentHourIndex({
+  currentIndex,
+  hourCount,
+  key,
+}: Readonly<{
+  currentIndex: number;
+  hourCount: number;
+  key: string;
+}>) {
+  if (
+    hourCount < 1 ||
+    currentIndex < 0 ||
+    currentIndex >= hourCount ||
+    (key !== "ArrowLeft" && key !== "ArrowRight")
+  ) {
+    return null;
+  }
+
+  const direction = key === "ArrowRight" ? 1 : -1;
+
+  return (currentIndex + direction + hourCount) % hourCount;
+}
+
 const dayInMilliseconds = 24 * 60 * 60 * 1_000;
 const hourInMilliseconds = 60 * 60 * 1_000;
 const checkIntervalInMilliseconds = 60 * 1_000;
@@ -454,6 +477,9 @@ function EndpointRow({
               ? "No monitoring data"
               : `${formatUptimePercentage(day.percentage / 100)} uptime`;
           const tooltipId = `${endpoint.key}-${day.date}-hourly-uptime`;
+          const firstMonitoredHour = day.hours.find(
+            ({ percentage }) => percentage !== null,
+          )?.hour;
 
           return (
             <span
@@ -513,6 +539,7 @@ function EndpointRow({
                         }
                         aria-label={`${hourText}:00 UTC: ${hourlyUptime}`}
                         className={`status-hourly-bar status-uptime-bar-${hour.status}`}
+                        data-status-hour=""
                         key={hour.hour}
                         onBlur={(event) => {
                           if (!event.currentTarget.matches(":hover")) {
@@ -530,8 +557,35 @@ function EndpointRow({
                             setActiveMinuteTooltipId(null);
                           }
                         }}
+                        onKeyDown={(event) => {
+                          const hourElements = Array.from(
+                            event.currentTarget.parentElement?.querySelectorAll<HTMLElement>(
+                              "[data-status-hour]",
+                            ) ?? [],
+                          );
+                          const adjacentHourIndex = getAdjacentHourIndex({
+                            currentIndex: hourElements.indexOf(
+                              event.currentTarget,
+                            ),
+                            hourCount: hourElements.length,
+                            key: event.key,
+                          });
+
+                          if (adjacentHourIndex === null) {
+                            return;
+                          }
+
+                          event.preventDefault();
+                          hourElements[adjacentHourIndex]?.focus();
+                        }}
                         role="group"
-                        tabIndex={0}
+                        tabIndex={
+                          isMinuteTooltipActive ||
+                          (activeMinuteTooltipId === null &&
+                            hour.hour === firstMonitoredHour)
+                            ? 0
+                            : -1
+                        }
                       >
                         {isMinuteTooltipActive ? (
                           <span
