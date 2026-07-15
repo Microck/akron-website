@@ -76,8 +76,8 @@ endpoints:
       timeout: 15s
     conditions:
       - "[STATUS] == 200"
-      - "[BODY].format == akron-community-pack-index-v2"
-      - "[BODY].version == 2"
+      - "[BODY].format == akron-community-pack-index-v3"
+      - "[BODY].version == 3"
       - "has([BODY].packs) == true"
 
   - name: Upload API

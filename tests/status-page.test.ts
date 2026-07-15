@@ -1,8 +1,11 @@
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
 import {
   formatUptimePercentage,
   formatCheckAge,
   formatUptimeDate,
+  getAdjacentHourIndex,
+  getMinuteUptimeSummary,
   getMonthlyUptimeSummary,
   getOverallStatus,
   type StatusEndpoint,
@@ -98,6 +101,32 @@ describe("formatUptimeDate", () => {
   });
 });
 
+describe("getAdjacentHourIndex", () => {
+  test("moves between hours with wrapping arrow-key navigation", () => {
+    expect(
+      getAdjacentHourIndex({
+        currentIndex: 0,
+        hourCount: 24,
+        key: "ArrowLeft",
+      }),
+    ).toBe(23);
+    expect(
+      getAdjacentHourIndex({
+        currentIndex: 23,
+        hourCount: 24,
+        key: "ArrowRight",
+      }),
+    ).toBe(0);
+    expect(
+      getAdjacentHourIndex({
+        currentIndex: 10,
+        hourCount: 24,
+        key: "Tab",
+      }),
+    ).toBeNull();
+  });
+});
+
 describe("getMonthlyUptimeSummary", () => {
   const now = new Date("2026-07-13T15:00:00Z");
   const events: readonly StatusEvent[] = [
@@ -121,14 +150,33 @@ describe("getMonthlyUptimeSummary", () => {
       status: "down",
     });
     expect(summary.days.at(-1)?.hours).toHaveLength(24);
-    expect(summary.days.at(-1)?.hours[11]).toEqual({
+    expect(summary.days.at(-1)?.hours[11]).toMatchObject({
       hour: 11,
       percentage: 0,
       status: "down",
     });
-    expect(summary.days.at(-1)?.hours[13]).toEqual({
+    expect(summary.days.at(-1)?.hours[13]).toMatchObject({
       hour: 13,
       percentage: 100,
+      status: "up",
+    });
+    const outageMinutes = getMinuteUptimeSummary(
+      events,
+      "2026-07-13",
+      11,
+      now,
+    );
+    const healthyMinutes = getMinuteUptimeSummary(
+      events,
+      "2026-07-13",
+      13,
+      now,
+    );
+
+    expect(outageMinutes).toHaveLength(60);
+    expect(outageMinutes.every(({ status }) => status === "down")).toBe(true);
+    expect(healthyMinutes[0]).toEqual({
+      minute: 0,
       status: "up",
     });
     expect(
@@ -140,33 +188,88 @@ describe("getMonthlyUptimeSummary", () => {
     expect(reversedSummary).toEqual(summary);
   });
 
-  test("uses green for 100%, amber from 99%, and red below 99%", () => {
+  test("colors days and hours from cumulative downtime duration", () => {
     const summary = getMonthlyUptimeSummary(
       [
         { type: "START", timestamp: "2026-06-01T00:00:00Z" },
         { type: "HEALTHY", timestamp: "2026-06-01T00:00:00Z" },
-        { type: "UNHEALTHY", timestamp: "2026-07-12T12:00:00Z" },
-        { type: "HEALTHY", timestamp: "2026-07-12T12:10:00Z" },
-        { type: "UNHEALTHY", timestamp: "2026-07-13T12:00:00Z" },
-        { type: "HEALTHY", timestamp: "2026-07-13T12:10:00Z" },
+        { type: "UNHEALTHY", timestamp: "2026-07-10T10:00:00Z" },
+        { type: "HEALTHY", timestamp: "2026-07-10T10:01:00Z" },
+        { type: "UNHEALTHY", timestamp: "2026-07-11T10:00:00Z" },
+        { type: "HEALTHY", timestamp: "2026-07-11T10:02:00Z" },
+        { type: "UNHEALTHY", timestamp: "2026-07-12T10:00:00Z" },
+        { type: "HEALTHY", timestamp: "2026-07-12T10:05:00Z" },
+        { type: "UNHEALTHY", timestamp: "2026-07-12T11:00:00Z" },
+        { type: "HEALTHY", timestamp: "2026-07-12T11:09:00Z" },
+        { type: "UNHEALTHY", timestamp: "2026-07-13T10:00:00Z" },
+        { type: "HEALTHY", timestamp: "2026-07-13T10:15:00Z" },
       ],
       now,
     );
 
     expect(summary.hasFullHistory).toBe(true);
-    expect(summary.days.at(-3)?.status).toBe("up");
-    expect(summary.days.at(-2)).toMatchObject({
-      date: "2026-07-12",
-      status: "degraded",
-    });
-    expect(summary.days.at(-2)?.hours[12]).toEqual({
-      hour: 12,
-      percentage: 83.33,
+    expect(summary.days.at(-4)?.status).toBe("up");
+    expect(summary.days.at(-4)?.hours[10]?.status).toBe("degraded");
+    expect(summary.days.at(-3)?.status).toBe("degraded");
+    expect(summary.days.at(-2)?.status).toBe("degraded");
+    expect(summary.days.at(-2)?.hours[10]).toMatchObject({
+      hour: 10,
+      percentage: 91.67,
       status: "down",
     });
+    expect(summary.days.at(-1)?.status).toBe("down");
+  });
+
+  test("does not round separate short outages up to failed minutes", () => {
+    const summary = getMonthlyUptimeSummary(
+      [
+        { type: "START", timestamp: "2026-06-01T00:00:00Z" },
+        { type: "HEALTHY", timestamp: "2026-06-01T00:00:00Z" },
+        { type: "UNHEALTHY", timestamp: "2026-07-13T10:00:00Z" },
+        { type: "HEALTHY", timestamp: "2026-07-13T10:00:10Z" },
+        { type: "UNHEALTHY", timestamp: "2026-07-13T11:00:00Z" },
+        { type: "HEALTHY", timestamp: "2026-07-13T11:00:10Z" },
+        { type: "UNHEALTHY", timestamp: "2026-07-13T12:00:00Z" },
+        { type: "HEALTHY", timestamp: "2026-07-13T12:00:10Z" },
+        { type: "UNHEALTHY", timestamp: "2026-07-13T13:00:00Z" },
+        { type: "HEALTHY", timestamp: "2026-07-13T13:00:10Z" },
+      ],
+      now,
+    );
+
+    expect(summary.days.at(-1)?.status).toBe("up");
+    expect(summary.days.at(-1)?.hours[10]?.status).toBe("up");
+    expect(
+      getMinuteUptimeSummary(
+        [
+          { type: "START", timestamp: "2026-07-13T10:00:00Z" },
+          { type: "UNHEALTHY", timestamp: "2026-07-13T10:00:00Z" },
+          { type: "HEALTHY", timestamp: "2026-07-13T10:00:10Z" },
+        ],
+        "2026-07-13",
+        10,
+        now,
+      )[0]?.status,
+    ).toBe("down");
+  });
+
+  test("leaves periods unknown until they have enough monitoring coverage", () => {
+    const partialNow = new Date("2026-07-13T12:00:00Z");
+    const summary = getMonthlyUptimeSummary(
+      [
+        { type: "START", timestamp: "2026-07-13T11:59:30Z" },
+        { type: "UNHEALTHY", timestamp: "2026-07-13T11:59:30Z" },
+      ],
+      partialNow,
+    );
+
     expect(summary.days.at(-1)).toMatchObject({
-      date: "2026-07-13",
-      status: "down",
+      percentage: 0,
+      status: "unknown",
+    });
+    expect(summary.days.at(-1)?.hours[11]).toMatchObject({
+      percentage: 0,
+      status: "unknown",
     });
   });
 
@@ -175,5 +278,33 @@ describe("getMonthlyUptimeSummary", () => {
 
     expect(summary.hasFullHistory).toBe(false);
     expect(summary.days.every(({ status }) => status === "unknown")).toBe(true);
+  });
+});
+
+describe("Gatus catalog contract", () => {
+  test("monitors the catalog format consumed by current Akron releases", () => {
+    const config = readFileSync("ops/gatus/config.yaml", "utf8");
+    const catalogConfig = config.match(
+      /  - name: Community Pack Catalog[\s\S]*?(?=\n  - name:|$)/,
+    )?.[0];
+
+    expect(catalogConfig).toContain(
+      '"[BODY].format == akron-community-pack-index-v3"',
+    );
+    expect(catalogConfig).toContain('"[BODY].version == 3"');
+    expect(catalogConfig).not.toContain("akron-community-pack-index-v2");
+  });
+});
+
+describe("nested uptime tooltips", () => {
+  test("keeps both tooltip levels open across hover gaps and draws arrows", () => {
+    const styles = readFileSync("src/styles.css", "utf8");
+
+    expect(styles).toContain(".status-uptime-tooltip::before");
+    expect(styles).toContain(".status-uptime-tooltip::after");
+    expect(styles).toContain(".status-minute-tooltip::before");
+    expect(styles).toContain(".status-minute-tooltip::after");
+    expect(styles).toContain(".status-uptime-bar:focus-within");
+    expect(styles).toContain(".status-hourly-bar:focus");
   });
 });

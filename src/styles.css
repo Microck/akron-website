@@ -886,7 +886,7 @@ body.status-body {
 }
 
 .status-uptime-bar:hover,
-.status-uptime-bar:focus {
+.status-uptime-bar:focus-within {
   z-index: 20;
 }
 
@@ -945,8 +945,18 @@ body.status-body {
   transform: translateX(-50%);
 }
 
+.status-uptime-tooltip::before {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  height: 0.55rem;
+  content: "";
+}
+
 .status-uptime-bar:hover .status-uptime-tooltip,
-.status-uptime-bar:focus .status-uptime-tooltip {
+.status-uptime-bar:focus-within .status-uptime-tooltip {
+  pointer-events: auto;
   opacity: 1;
   visibility: visible;
 }
@@ -994,8 +1004,115 @@ body.status-body {
 }
 
 .status-hourly-bar {
+  position: relative;
   min-width: 0;
   border-radius: 1px;
+  cursor: help;
+}
+
+.status-hourly-bar:hover,
+.status-hourly-bar:focus {
+  z-index: 2;
+}
+
+.status-hourly-bar:focus-visible {
+  outline: 2px solid var(--status-paper-strong);
+  outline-offset: 2px;
+}
+
+.status-minute-tooltip {
+  --minute-tooltip-arrow-position: 50%;
+
+  position: absolute;
+  bottom: calc(100% + 0.5rem);
+  left: 50%;
+  display: block;
+  width: min(15.5rem, calc(100vw - 3rem));
+  padding: 0.6rem;
+  border-radius: 0.35rem;
+  color: var(--status-paper-strong);
+  background: oklch(22% 0.035 38 / 99%);
+  box-shadow:
+    0 0 0 1px oklch(100% 0 0 / 10%),
+    0 0.55rem 1.4rem oklch(15% 0.04 38 / 35%);
+  font-size: 0.625rem;
+  line-height: 1.35;
+  text-align: left;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-50%);
+}
+
+.status-minute-tooltip::before {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  height: 0.5rem;
+  content: "";
+}
+
+.status-minute-tooltip::after {
+  position: absolute;
+  top: 100%;
+  left: var(--minute-tooltip-arrow-position);
+  border: 0.3rem solid transparent;
+  border-top-color: oklch(22% 0.035 38 / 99%);
+  content: "";
+  transform: translateX(-50%);
+}
+
+.status-hourly-bar:hover > .status-minute-tooltip,
+.status-hourly-bar:focus > .status-minute-tooltip {
+  pointer-events: auto;
+  opacity: 1;
+  visibility: visible;
+}
+
+.status-hourly-bar:nth-child(-n + 5) .status-minute-tooltip {
+  --minute-tooltip-arrow-position: 0.75rem;
+
+  left: -0.4rem;
+  transform: none;
+}
+
+.status-hourly-bar:nth-last-child(-n + 5) .status-minute-tooltip {
+  --minute-tooltip-arrow-position: calc(100% - 0.75rem);
+
+  right: -0.4rem;
+  left: auto;
+  transform: none;
+}
+
+.status-minute-bars {
+  display: grid;
+  height: 0.7rem;
+  grid-template-columns: repeat(60, minmax(0, 1fr));
+  gap: 1px;
+  margin-top: 0.55rem;
+}
+
+.status-minute-bar {
+  min-width: 0;
+  border-radius: 1px;
+}
+
+.status-minute-axis {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  margin-top: 0.2rem;
+  color: color-mix(in oklch, var(--status-paper-strong) 55%, transparent);
+  font-size: 0.5625rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.status-minute-axis > :nth-child(2) {
+  text-align: center;
+}
+
+.status-minute-axis > :last-child {
+  text-align: right;
 }
 
 .status-hourly-axis {
