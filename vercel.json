@@ -220,11 +220,11 @@
     },
     {
       "source": "/llms.txt",
-      "destination": "https://akron-cdb9eaf4.mintlify.app/llms.txt"
+      "destination": "/api/llms-txt"
     },
     {
       "source": "/llms-full.txt",
-      "destination": "https://akron-cdb9eaf4.mintlify.app/llms-full.txt"
+      "destination": "/api/llms-full-txt"
     },
     {
       "source": "/sitemap.xml",
