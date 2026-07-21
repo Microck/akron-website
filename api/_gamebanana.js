@@ -1,5 +1,5 @@
 const gamebananaModId = "681169";
-const gamebananaFallbackFileId = "1725224";
+const gamebananaFallbackFileId = "1760076";
 const gamebananaFilesApiUrl =
   `https://api.gamebanana.com/Core/Item/Data?itemtype=Mod&itemid=${gamebananaModId}` +
   "&fields=Files().aFiles()&return_keys=1&format=json_min&flags=JSON_UNESCAPED_SLASHES";
@@ -30,7 +30,18 @@ async function loadLatestGamebananaFileId() {
     }
   }
 
-  return latestFileId ?? gamebananaFallbackFileId;
+  return preferNewestKnownFileId(latestFileId);
+}
+
+export function preferNewestKnownFileId(apiFileId) {
+  const apiId = Number(apiFileId);
+  const fallbackId = Number(gamebananaFallbackFileId);
+
+  // GameBanana assigns increasing numeric file IDs. Keep a freshly published
+  // fallback authoritative until the public Files API catches up.
+  return Number.isSafeInteger(apiId) && apiId > fallbackId
+    ? String(apiFileId)
+    : gamebananaFallbackFileId;
 }
 
 export async function resolveOlympusInstallUrl() {
