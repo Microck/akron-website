@@ -5,3 +5,8 @@
 - label: published multi-image pack captures resolve through the Akron domain to their R2 capture objects
   command: bun test tests/vercel-rewrites.test.ts
   tags: [spec, implemented]
+
+# website
+
+## seo
+- the Akron landing page and proxied documentation expose canonical crawler metadata, structured software identity, permissive robots directives, and one canonical-domain sitemap without changing rendered content @implemented

@@ -228,7 +228,7 @@
     },
     {
       "source": "/sitemap.xml",
-      "destination": "https://akron-cdb9eaf4.mintlify.app/sitemap.xml"
+      "destination": "/api/sitemap"
     }
   ]
 }
