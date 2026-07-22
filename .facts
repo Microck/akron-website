@@ -9,4 +9,9 @@
 # website
 
 ## seo
-- the Akron landing page and proxied documentation expose canonical crawler metadata, structured software identity, permissive robots directives, and one canonical-domain sitemap without changing rendered content @implemented
+- label: the Akron landing page and proxied documentation expose canonical crawler metadata, structured software identity, permissive robots directives, and one canonical-domain sitemap without changing rendered content
+  command: bun test tests/seo.test.ts
+  tags: [implemented]
+- label: the Akron site publishes a successful llms.txt that identifies the project and links only to canonical Akron resources
+  command: bun test tests/seo.test.ts
+  tags: [implemented]
