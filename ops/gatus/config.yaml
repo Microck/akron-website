@@ -35,7 +35,7 @@ endpoints:
       timeout: 15s
     conditions:
       - "[STATUS] == 200"
-      - "[BODY] == pat(*<title>Akron</title>*)"
+      - "[BODY] == pat(*<title>Akron - Celeste Mod Download and Olympus Install Guide</title>*)"
       - "[CERTIFICATE_EXPIRATION] > 72h"
 
   - name: Documentation

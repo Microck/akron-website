@@ -15,3 +15,10 @@
 - label: the Akron site publishes a successful llms.txt that identifies the project and links only to canonical Akron resources
   command: bun test tests/seo.test.ts
   tags: [implemented]
+
+# operations
+
+## status
+- label: the Akron Website status monitor validates the current canonical page title so SEO metadata changes do not produce a false degraded state
+  command: rg -Fq '[BODY] == pat(*<title>Akron - Celeste Mod Download and Olympus Install Guide</title>*)' ops/gatus/config.yaml
+  tags: [implemented]
