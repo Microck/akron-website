@@ -6,6 +6,8 @@ test("the landing page declares its canonical URL", async () => {
   const html = await readFile("index.html", "utf8");
 
   expect(html).toContain('<link rel="canonical" href="https://akron.micr.dev/" />');
+  expect(html).toContain('"@type": "SoftwareSourceCode"');
+  expect(html).not.toContain('"@type": "SoftwareApplication"');
 });
 
 test("llms.txt identifies Akron with canonical resources", async () => {
