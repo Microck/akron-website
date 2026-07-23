@@ -210,7 +210,7 @@ describe("getMonthlyUptimeSummary", () => {
     expect(summary.hasFullHistory).toBe(true);
     expect(summary.days.at(-4)?.status).toBe("up");
     expect(summary.days.at(-4)?.hours[10]?.status).toBe("degraded");
-    expect(summary.days.at(-3)?.status).toBe("degraded");
+    expect(summary.days.at(-3)?.status).toBe("up");
     expect(summary.days.at(-2)?.status).toBe("degraded");
     expect(summary.days.at(-2)?.hours[10]).toMatchObject({
       hour: 10,

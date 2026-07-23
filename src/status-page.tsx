@@ -158,7 +158,7 @@ const hourInMilliseconds = 60 * 60 * 1_000;
 const checkIntervalInMilliseconds = 60 * 1_000;
 const hourlyDegradedAfterMilliseconds = checkIntervalInMilliseconds;
 const hourlyDownAfterMilliseconds = 5 * checkIntervalInMilliseconds;
-const dailyDegradedAfterMilliseconds = 2 * checkIntervalInMilliseconds;
+const dailyDegradedAfterMilliseconds = 6 * checkIntervalInMilliseconds;
 const dailyDownAfterMilliseconds = 15 * checkIntervalInMilliseconds;
 
 type UptimeInterval = Readonly<{
