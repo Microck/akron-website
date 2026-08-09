@@ -10,7 +10,7 @@ const preloaderLogoMarkup = preloaderLogoSvg
   .replace(/<!DOCTYPE[^>]*>\s*/u, "");
 
 const gamebananaModId = "681169";
-const gamebananaFallbackFileId = "1778713";
+const gamebananaFallbackFileId = "1778855";
 const gamebananaModUrl = `https://gamebanana.com/mods/${gamebananaModId}`;
 const gamebananaFilesApiUrl =
   `https://api.gamebanana.com/Core/Item/Data?itemtype=Mod&itemid=${gamebananaModId}` +
