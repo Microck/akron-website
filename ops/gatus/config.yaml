@@ -30,7 +30,7 @@ endpoints:
   - name: Website
     group: Core
     url: https://akron.micr.dev/
-    interval: 1m
+    interval: 10m
     client:
       timeout: 15s
     conditions:
@@ -41,7 +41,7 @@ endpoints:
   - name: Documentation
     group: Core
     url: https://akron.micr.dev/docs
-    interval: 1m
+    interval: 10m
     client:
       timeout: 15s
     conditions:
@@ -51,7 +51,7 @@ endpoints:
   - name: Raw Download Redirect
     group: Distribution
     url: https://akron.micr.dev/raw
-    interval: 1m
+    interval: 10m
     client:
       ignore-redirect: true
       timeout: 15s
@@ -61,7 +61,7 @@ endpoints:
   - name: Olympus Install Redirect
     group: Distribution
     url: https://akron.micr.dev/olympus
-    interval: 1m
+    interval: 10m
     client:
       ignore-redirect: true
       timeout: 15s
@@ -71,7 +71,7 @@ endpoints:
   - name: Community Pack Catalog
     group: Community Packs
     url: https://akron.micr.dev/catalog/index.json
-    interval: 1m
+    interval: 10m
     client:
       timeout: 15s
     conditions:
@@ -83,7 +83,7 @@ endpoints:
   - name: Upload API
     group: Community Packs
     url: https://akron.micr.dev/uploads/challenge
-    interval: 1m
+    interval: 10m
     client:
       timeout: 15s
     conditions:
