@@ -1,5 +1,5 @@
 const gamebananaModId = "681169";
-const gamebananaFallbackFileId = "1800876";
+const gamebananaFallbackFileId = "1803063";
 const gamebananaFilesApiUrl =
   `https://api.gamebanana.com/Core/Item/Data?itemtype=Mod&itemid=${gamebananaModId}` +
   "&fields=Files().aFiles()&return_keys=1&format=json_min&flags=JSON_UNESCAPED_SLASHES";
