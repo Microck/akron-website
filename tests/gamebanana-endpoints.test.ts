@@ -1,13 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { preferNewestKnownFileId } from "../api/_gamebanana.js";
+import { resolveOlympusInstallUrl, resolveRawDownloadUrl } from "../api/_gamebanana.js";
 
-describe("preferNewestKnownFileId", () => {
-  test("keeps the release fallback while the public API lags", () => {
-    expect(preferNewestKnownFileId("1756151")).toBe("1760076");
-    expect(preferNewestKnownFileId(null)).toBe("1760076");
-  });
-
-  test("accepts a newer public GameBanana file", () => {
-    expect(preferNewestKnownFileId("1760077")).toBe("1760077");
+describe("install endpoints", () => {
+  test("both install routes use the published release archive", () => {
+    const download = resolveRawDownloadUrl();
+    expect(download).toBe("https://github.com/Microck/akron/releases/download/v0.1.2-beta.82/Akron-v0.1.2-beta.82.zip");
+    expect(resolveOlympusInstallUrl()).toBe(`everest:${download}`);
   });
 });

@@ -9,64 +9,10 @@ const preloaderLogoMarkup = preloaderLogoSvg
   .replace(/<\?xml[^>]*>\s*/u, "")
   .replace(/<!DOCTYPE[^>]*>\s*/u, "");
 
-const gamebananaModId = "681169";
-const gamebananaFallbackFileId = "1823674";
-const gamebananaModUrl = `https://gamebanana.com/mods/${gamebananaModId}`;
-const gamebananaFilesApiUrl =
-  `https://api.gamebanana.com/Core/Item/Data?itemtype=Mod&itemid=${gamebananaModId}` +
-  "&fields=Files().aFiles()&return_keys=1&format=json_min&flags=JSON_UNESCAPED_SLASHES";
-
-type GamebananaFile = Readonly<{
-  _idRow: string | number;
-  _tsDateAdded: string | number;
-  _bIsArchived: boolean;
-  _sAnalysisResult?: string;
-  _sAvResult?: string;
-}>;
-
-type GamebananaFilesResponse = Readonly<{
-  "Files().aFiles()"?: Record<string, GamebananaFile>;
-}>;
-
-function getDownloadUrl(fileId: string) {
-  return `https://gamebanana.com/dl/${fileId}`;
-}
-
-function getOlympusInstallUrl(fileId: string) {
-  return `everest:https://gamebanana.com/mmdl/${fileId},Mod,${gamebananaModId}`;
-}
-
-async function loadLatestGamebananaFileId(signal: AbortSignal) {
-  const response = await fetch(gamebananaFilesApiUrl, { signal });
-
-  if (!response.ok) {
-    throw new Error(`GameBanana API returned ${response.status}`);
-  }
-
-  const payload = (await response.json()) as GamebananaFilesResponse;
-  return selectLatestGamebananaFileId(payload["Files().aFiles()"] ?? {});
-}
-
-function selectLatestGamebananaFileId(files: Record<string, GamebananaFile>) {
-  let latestFile: GamebananaFile | null = null;
-  let latestTimestamp = Number.NEGATIVE_INFINITY;
-
-  for (const file of Object.values(files)) {
-    const timestamp = Number(file._tsDateAdded);
-    const isInstallable =
-      !file._bIsArchived &&
-      Number.isFinite(timestamp) &&
-      file._sAnalysisResult !== "failed" &&
-      file._sAvResult !== "infected";
-
-    if (isInstallable && timestamp > latestTimestamp) {
-      latestFile = file;
-      latestTimestamp = timestamp;
-    }
-  }
-
-  return latestFile ? String(latestFile._idRow) : null;
-}
+const gamebananaModUrl = "https://gamebanana.com/mods/681169";
+const releaseTag = "v0.1.2-beta.82";
+const releaseAssetUrl = `https://github.com/Microck/akron/releases/download/${releaseTag}/Akron-${releaseTag}.zip`;
+const olympusInstallUrl = `everest:${releaseAssetUrl}`;
 
 type InstallEndpoint = "olympus" | "raw";
 
@@ -249,50 +195,12 @@ function AkronLandingPage() {
 }
 
 function InstallRedirectPage({ endpoint }: Readonly<{ endpoint: InstallEndpoint }>) {
-  const [installUrl, setInstallUrl] = useState(
-    endpoint === "olympus"
-      ? getOlympusInstallUrl(gamebananaFallbackFileId)
-      : getDownloadUrl(gamebananaFallbackFileId),
-  );
+  const installUrl = endpoint === "olympus" ? olympusInstallUrl : releaseAssetUrl;
   const label = endpoint === "olympus" ? "Open Olympus" : "Download Akron";
 
   useEffect(() => {
-    const abortController = new AbortController();
-    let isCancelled = false;
-
-    async function redirectToInstallTarget() {
-      let fileId = gamebananaFallbackFileId;
-
-      try {
-        fileId =
-          (await loadLatestGamebananaFileId(abortController.signal)) ?? fileId;
-      } catch (error: unknown) {
-        if (error instanceof DOMException && error.name === "AbortError") {
-          return;
-        }
-
-        console.warn("Unable to load the latest GameBanana file.", error);
-      }
-
-      if (isCancelled) {
-        return;
-      }
-
-      const latestInstallUrl =
-        endpoint === "olympus"
-          ? getOlympusInstallUrl(fileId)
-          : getDownloadUrl(fileId);
-      setInstallUrl(latestInstallUrl);
-      window.location.replace(latestInstallUrl);
-    }
-
-    redirectToInstallTarget();
-
-    return () => {
-      isCancelled = true;
-      abortController.abort();
-    };
-  }, [endpoint]);
+    window.location.replace(installUrl);
+  }, [installUrl]);
 
   return (
     <main className="install-redirect-shell" aria-label="Akron install">
