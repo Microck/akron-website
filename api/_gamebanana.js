@@ -1,4 +1,4 @@
-const releaseTag = "v0.1.2-beta.82";
+const releaseTag = "v0.1.2-beta.83";
 const releaseAssetUrl = `https://github.com/Microck/akron/releases/download/${releaseTag}/Akron-${releaseTag}.zip`;
 
 export function resolveOlympusInstallUrl() {
