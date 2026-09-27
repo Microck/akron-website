@@ -31,7 +31,7 @@ describe("Vercel status proxy", () => {
   test("proxies only the status API namespace to Gatus", () => {
     expect(vercelConfig.rewrites).toContainEqual({
       source: "/status-api/:path*",
-      destination: "http://145.241.164.73/api/v1/:path*"
+      destination: "https://akron-status-api.marcos-jaen-lego.workers.dev/api/v1/:path*"
     });
   });
 });

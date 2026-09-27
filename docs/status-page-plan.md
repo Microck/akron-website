@@ -242,6 +242,29 @@ The canonical deployment files live in `ops/gatus` and are copied to
 - Retention: 43,200 results and 100 events per endpoint
 - Resource limit: 256 MiB per container
 
+### Public status path
+
+The website serves `/status` and fetches Gatus data from `/status-api/*`.
+Vercel sends those API requests to the `akron-status-api` Cloudflare Worker.
+Its `STATUS_ORIGIN` binding points to
+`https://oracle-ashburn-cloud.tailc896c6.ts.net`, the persistent Tailscale
+Funnel hostname of the status host. Funnel forwards to Caddy and Gatus on
+`127.0.0.1:80`. `tailscaled` and Funnel remain enabled across host restarts.
+
+The former Vercel rewrite to `http://145.241.164.73` failed because that
+public port refused connections. A temporary Cloudflare quick tunnel also
+worked, but its hostname changed when `cloudflared` restarted. The Worker can
+reach Funnel and gives Vercel a stable rewrite target.
+
+To redeploy the Worker, set `CLOUDFLARE_API_TOKEN` and run:
+
+```console
+STATUS_ORIGIN=https://oracle-ashburn-cloud.tailc896c6.ts.net ops/gatus/deploy-status-api-worker.sh
+```
+
+After a website deployment, check `/status-api/config` for HTTP 200 and open
+`/status` to confirm the service list and history load.
+
 Routine configuration deployment:
 
 ```console
