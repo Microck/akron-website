@@ -203,15 +203,33 @@ and incident announcements.
 | Component | Check |
 | --- | --- |
 | Website | HTTP 200, Akron title marker, and more than 72 hours of certificate validity |
-| Documentation | HTTP 200 and the Akron documentation title marker |
+| Documentation | HTTP 200, Akron title marker, and the Mintlify documentation canonical URL |
 | Raw download | Exact HTTP 307 without following the redirect |
 | Olympus install | Exact HTTP 307 without following the redirect |
 | Community Pack Catalog | HTTP 200, format `akron-community-pack-index-v3`, version 3, and a packs field |
-| Community Pack Uploads | HTTP 200 plus challenge terms, accepted sections, and limits fields |
+| Community Pack Uploads | Challenge contract plus a separate HTTP 200 readiness probe of D1 and both R2 buckets |
+| Akron Discord Bot | HTTP 200 and `ready: true` from the bot over private Tailscale, checking Discord readiness and SQLite |
+| Download Artifact | Follow `/raw`, request the first four bytes, and require HTTP 206 and a ZIP `PK` signature |
 | Discord Platform API | HTTP 200 and the expected Discord Gateway URL |
 
-The upload challenge is not a deep health check today. It returns static
-capability data without proving D1 or R2 availability.
+The challenge check retains its capability assertions. `/uploads/health`
+performs non-mutating D1 and R2 reads and returns no storage data. It does not
+prove write access or a full upload and moderation cycle. The bot probe reads
+SQLite and uses Discord client readiness, which includes gateway reconnection
+state. It cannot prove that every command works.
+
+Deploy and verify both readiness endpoints before applying this Gatus
+configuration. The bot and upload Worker deploy from `Microck/akron-discord`;
+this website repository does not deploy them. Require HTTP 200 and
+`ready: true` from Ashburn for the bot and through `/uploads/health` for
+uploads before enabling the new checks.
+
+The bot remains on the workspace host. Gatus reaches port 3005 over Tailscale
+every minute using its private Tailscale IP, so that check contacts the
+workspace host even without player activity. The container uses public DNS,
+so the probe uses the Tailscale IP instead of relying on MagicDNS. If the bot
+moves, update this check to the new host. Keep its HTTP port private. The ZIP check uses a four-byte range request every ten minutes
+and follows the current redirect rather than pinning a release version.
 
 ## Uptime Bar Severity
 
@@ -278,21 +296,16 @@ The operator-owned YAML and Caddy files remain writable through SSH.
 
 ## Remaining Work
 
-1. Add a deep upload health endpoint that performs non-mutating D1 and R2
-   checks. The current challenge endpoint validates the HTTP contract only.
-2. Add a Discord bot readiness or heartbeat endpoint that checks Discord client
-   readiness and SQLite. Discord's public API is not proof that the Akron bot is
-   online.
-3. Choose an alert destination and configure Gatus failure and recovery alerts.
-4. Consider a dedicated status hostname if availability during Vercel outages
+1. Choose an alert destination and configure Gatus failure and recovery alerts.
+2. Consider a dedicated status hostname if availability during Vercel outages
    becomes more important than keeping the page under `/status`.
 
 ## Success Criteria
 
 - `https://akron.micr.dev/status` renders the Akron status view backed by Gatus.
 - The monitoring origin remains healthy across container restarts and retains SQLite history.
-- All currently monitorable components report independently, and the Discord
-  bot readiness gap is explicit.
+- The bot, upload dependencies, download artifact, and Discord platform report
+  independently.
 - Catalog incompatibility is detected even when the endpoint returns 200.
 - Incidents have public history and can include maintainer updates.
 - No production secret is stored in the public status repository.

@@ -46,7 +46,10 @@ endpoints:
       timeout: 15s
     conditions:
       - "[STATUS] == 200"
-      - "[BODY] == pat(*<title>Akron documentation - Akron</title>*)"
+      # Mintlify emits a changing SEO title through the /docs rewrite. Check
+      # the title and the documentation canonical URL without pinning marketing copy.
+      - "[BODY] == pat(*<title>*Akron*</title>*)"
+      - '[BODY] == pat(*<link rel="canonical" href="https://akron-cdb9eaf4.mintlify.app"*)'
 
   - name: Raw Download Redirect
     group: Distribution
@@ -101,3 +104,35 @@ endpoints:
     conditions:
       - "[STATUS] == 200"
       - "[BODY].url == wss://gateway.discord.gg"
+
+  - name: Akron Discord Bot
+    group: Core
+    url: http://100.124.44.113:3005/health
+    interval: 1m
+    client:
+      timeout: 15s
+    conditions:
+      - "[STATUS] == 200"
+      - "[BODY].ready == true"
+
+  - name: Upload Dependencies
+    group: Community Packs
+    url: https://akron.micr.dev/uploads/health
+    interval: 10m
+    client:
+      timeout: 15s
+    conditions:
+      - "[STATUS] == 200"
+      - "[BODY].ready == true"
+
+  - name: Download Artifact
+    group: Distribution
+    url: https://akron.micr.dev/raw
+    interval: 10m
+    headers:
+      Range: bytes=0-3
+    client:
+      timeout: 15s
+    conditions:
+      - "[STATUS] == 206"
+      - "[BODY] == pat(PK*)"
