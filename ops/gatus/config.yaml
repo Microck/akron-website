@@ -47,8 +47,9 @@ endpoints:
     conditions:
       - "[STATUS] == 200"
       # Mintlify emits a changing SEO title through the /docs rewrite. Check
-      # that the response is an Akron document without pinning marketing copy.
+      # the title and the documentation canonical URL without pinning marketing copy.
       - "[BODY] == pat(*<title>*Akron*</title>*)"
+      - '[BODY] == pat(*<link rel="canonical" href="https://akron-cdb9eaf4.mintlify.app"*)'
 
   - name: Raw Download Redirect
     group: Distribution

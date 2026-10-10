@@ -203,7 +203,7 @@ and incident announcements.
 | Component | Check |
 | --- | --- |
 | Website | HTTP 200, Akron title marker, and more than 72 hours of certificate validity |
-| Documentation | HTTP 200 and the Akron documentation title marker |
+| Documentation | HTTP 200, Akron title marker, and the Mintlify documentation canonical URL |
 | Raw download | Exact HTTP 307 without following the redirect |
 | Olympus install | Exact HTTP 307 without following the redirect |
 | Community Pack Catalog | HTTP 200, format `akron-community-pack-index-v3`, version 3, and a packs field |
