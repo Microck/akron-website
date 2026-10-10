@@ -224,12 +224,29 @@ this website repository does not deploy them. Require HTTP 200 and
 `ready: true` from Ashburn for the bot and through `/uploads/health` for
 uploads before enabling the new checks.
 
-The bot remains on the workspace host. Gatus reaches port 3005 over Tailscale
-every minute using its private Tailscale IP, so that check contacts the
-workspace host even without player activity. The container uses public DNS,
-so the probe uses the Tailscale IP instead of relying on MagicDNS. If the bot
-moves, update this check to the new host. Keep its HTTP port private. The ZIP check uses a four-byte range request every ten minutes
-and follows the current redirect rather than pinning a release version.
+The bot runs on Paris Cloud (`ubuntu-paris`) in `/home/ubuntu/akron-discord`.
+Gatus runs on Ashburn Cloud and reaches `100.96.124.15:3005` over Tailscale
+every minute. Neither the bot nor its health check depends on the workspace
+host. The container uses public DNS, so the probe uses the Tailscale IP
+instead of relying on MagicDNS. Port 3005 binds only to localhost and the
+Paris Tailscale IP.
+
+The Paris deployment preserves the reviewed bot image, runtime settings,
+SQLite data, and Sentry release. Its private `compose.json` contains runtime
+secrets and must stay mode `0600` outside version control. Run Docker Compose
+from that directory with `-f compose.json`. Stop the old instance before
+starting another instance with the same Discord token. The stopped workspace
+container and its database are retained for rollback with automatic restart
+disabled; any rollback must first stop Paris and preserve its latest database.
+
+GitHub sends signed `issues` and `issue_comment` webhooks for `Microck/akron`
+to `https://unvictualed-carole-nonarticulate.ngrok-free.dev/github/webhook`.
+The `akron-discord-webhook.service` systemd service runs ngrok on Paris and
+forwards that reserved address to localhost port 3005. Its private `ngrok.yml`
+stays mode `0600`. The service starts at boot and restarts after a failure.
+Paris's existing Tailscale Funnel routes remain unchanged.
+The ZIP check uses a four-byte range request every ten minutes and follows
+the current redirect rather than pinning a release version.
 
 ## Uptime Bar Severity
 

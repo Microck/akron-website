@@ -107,7 +107,7 @@ endpoints:
 
   - name: Akron Discord Bot
     group: Core
-    url: http://100.124.44.113:3005/health
+    url: http://100.96.124.15:3005/health
     interval: 1m
     client:
       timeout: 15s
