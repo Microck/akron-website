@@ -1,8 +1,10 @@
+import { reactRootOptions } from "./instrument";
 import { StrictMode, useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import { createRoot } from "react-dom/client";
 import preloaderLogoSvg from "./assets/preloader-logo.svg?raw";
 import { StatusPage } from "./status-page";
+import { AppErrorBoundary } from "./error-boundary";
 import "./styles.css";
 
 const preloaderLogoMarkup = preloaderLogoSvg
@@ -225,8 +227,8 @@ if (currentPath === "/status") {
   document.body.classList.add("status-body");
 }
 
-createRoot(document.getElementById("root")!).render(
+createRoot(document.getElementById("root")!, reactRootOptions).render(
   <StrictMode>
-    <App />
+    <AppErrorBoundary><App /></AppErrorBoundary>
   </StrictMode>,
 );
