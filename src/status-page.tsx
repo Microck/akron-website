@@ -1,4 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
+import { captureStatusError } from "./instrument";
+import { createOutageReporter, isAbortError } from "../observability/privacy.js";
+
+class StatusRequestError extends Error {
+  constructor(message: string, readonly failureKind: "http" | "invalid_data", readonly status?: number) {
+    super(message);
+    this.name = "StatusRequestError";
+  }
+}
 
 type ConditionResult = Readonly<{
   condition: string;
@@ -676,8 +685,12 @@ export function StatusPage() {
 
   useEffect(() => {
     const abortController = new AbortController();
+    const reporter = createOutageReporter(captureStatusError);
+    let isRefreshing = false;
 
     async function loadStatus() {
+      if (isRefreshing) return;
+      isRefreshing = true;
       try {
         const [endpointsResponse, configResponse] = await Promise.all([
           fetch(`${statusApiBase}/endpoints/statuses?page=1&pageSize=1`, {
@@ -687,7 +700,8 @@ export function StatusPage() {
         ]);
 
         if (!endpointsResponse.ok || !configResponse.ok) {
-          throw new Error("The status service returned an invalid response.");
+          throw new StatusRequestError("Status request failed.", "http",
+            !endpointsResponse.ok ? endpointsResponse.status : configResponse.status);
         }
 
         const nextEndpoints =
@@ -697,6 +711,7 @@ export function StatusPage() {
         setEndpoints(nextEndpoints);
         setAnnouncements(config.announcements ?? []);
         setErrorMessage(null);
+        reporter.recovered("current_status");
 
         try {
           const historyEntries = await Promise.all(
@@ -713,7 +728,8 @@ export function StatusPage() {
               ]);
 
               if (!detailResponse.ok || !uptimeResponse.ok) {
-                throw new Error("Monthly history could not be loaded.");
+                throw new StatusRequestError("Status history request failed.", "http",
+                  !detailResponse.ok ? detailResponse.status : uptimeResponse.status);
               }
 
               const detail = (await detailResponse.json()) as StatusEndpoint & {
@@ -722,7 +738,7 @@ export function StatusPage() {
               const uptime = Number(await uptimeResponse.text());
 
               if (!Number.isFinite(uptime) || uptime < 0 || uptime > 1) {
-                throw new Error("Monthly history returned an invalid uptime.");
+                throw new StatusRequestError("Status history returned invalid data.", "invalid_data");
               }
 
               return [
@@ -734,25 +750,30 @@ export function StatusPage() {
 
           setEndpointHistories(Object.fromEntries(historyEntries));
           setHistoryUnavailable(false);
+          reporter.recovered("status_history");
         } catch (error: unknown) {
-          if (error instanceof DOMException && error.name === "AbortError") {
+          if (isAbortError(error)) {
             return;
           }
 
           // Current health remains useful even if historical aggregation fails.
+          reporter.failure("status_history", error, !navigator.onLine);
           setEndpointHistories({});
           setHistoryUnavailable(true);
         }
       } catch (error: unknown) {
-        if (error instanceof DOMException && error.name === "AbortError") {
+        if (isAbortError(error)) {
           return;
         }
 
+        reporter.failure("current_status", error, !navigator.onLine);
         setErrorMessage(
           error instanceof Error
             ? error.message
             : "The status service could not be reached.",
         );
+      } finally {
+        isRefreshing = false;
       }
     }
 

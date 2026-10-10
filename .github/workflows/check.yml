@@ -1,0 +1,36 @@
+name: Check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.3
+      # TEMPORARY: regenerate the lock on a host where Bun can run. Remove this
+      # step once the exact generated bun.lock is committed to this draft PR.
+      - name: Generate pending dependency lock (temporary)
+        run: |
+          bun install --lockfile-only
+          echo AKRON_SENTRY_LOCKFILE_BEGIN
+          cat bun.lock
+          echo AKRON_SENTRY_LOCKFILE_END
+      - run: bun install --frozen-lockfile
+      - run: bun test
+      - run: bun run build
+      - run: bun run build:status-worker

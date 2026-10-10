@@ -6,17 +6,24 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc -b && vite build",
+    "build:status-worker": "node ops/gatus/build-status-api-worker.mjs",
     "preview": "vite preview --host 127.0.0.1",
     "test": "bun test tests/*.test.ts"
   },
   "dependencies": {
+    "@sentry/cloudflare": "11.6.0",
+    "@sentry/react": "11.6.0",
     "react": "19.2.7",
     "react-dom": "19.2.7"
   },
   "devDependencies": {
+    "@sentry/esbuild-plugin": "5.4.1",
+    "@sentry/vite-plugin": "5.4.1",
+    "@types/node": "^24.0.0",
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.2",
+    "esbuild": "0.28.2",
     "typescript": "6.0.3",
     "vite": "8.0.16"
   }

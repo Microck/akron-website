@@ -13,19 +13,27 @@ USER_AGENT="OpenAI File Downloader, XaiImageApiFetch/1.0"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
-cp "$ROOT/status-api-worker.js" "$TMP/worker.js"
+node "$ROOT/build-status-api-worker.mjs" "$TMP"
 python3 - "$TMP/metadata.json" "$ORIGIN" <<'PY'
 import json
+import os
 import sys
 from pathlib import Path
 meta = {
   "main_module": "worker.js",
+  "compatibility_date": "2026-10-10",
+  "compatibility_flags": ["nodejs_compat"],
   "bindings": [{
     "type": "plain_text",
     "name": "STATUS_ORIGIN",
     "text": sys.argv[2],
   }],
 }
+for name in ("SENTRY_DSN", "SENTRY_ENVIRONMENT", "SENTRY_RELEASE"):
+  # These are Worker settings, not the browser DSN or the build auth token.
+  value = os.environ.get(name, "")
+  if value:
+    meta["bindings"].append({"type": "plain_text", "name": name, "text": value})
 Path(sys.argv[1]).write_text(json.dumps(meta))
 PY
 
