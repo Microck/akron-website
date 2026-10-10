@@ -9,6 +9,23 @@ This integration pins the released JavaScript SDK **11.6.0** and Sentry bundler
 plugins **5.4.1**. It uses the v11 `dataCollection` options. Do not copy older
 `sendDefaultPii` or `nodejs_als` examples into this configuration.
 
+## Maintained projects
+
+The maintained organization is `syntaxis-h1`. The browser uses
+`akron-website`; the independently deployed status Worker uses
+`akron-status-worker`. Both projects discard client IP addresses and derived geolocation, use default
+sensitive-data scrubbing, and restrict debug-file downloads to owners.
+
+Vercel's `akron-website` project has the browser/tunnel DSNs and build upload
+variables in production and preview. Environment changes apply to the next
+build and deployment.
+
+The GitHub repository also provides `SENTRY_ORG`, `SENTRY_PROJECT`,
+`SENTRY_STATUS_PROJECT`, and `SENTRY_STATUS_DSN` as variables and
+`SENTRY_AUTH_TOKEN` as a trusted-build secret. For the status deployment,
+pass `SENTRY_STATUS_DSN` as `SENTRY_DSN` and use the matching Worker project.
+GitHub variables do not update the live Worker's bindings automatically.
+
 ## Website on Vercel
 
 Create a React Sentry project and set both variables in the relevant Vercel
