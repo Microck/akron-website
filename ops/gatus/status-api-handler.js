@@ -8,6 +8,7 @@ export function createStatusWorker(sentry) {
       if (!parseSentryDsn(env.SENTRY_DSN)) return plainHandler.fetch(request, env, ctx);
       instrumentedHandler ??= sentry.withSentry((bindings) => ({
         dsn: parseSentryDsn(bindings.SENTRY_DSN)?.dsn,
+        cacheClient: false,
         environment: bindings.SENTRY_ENVIRONMENT || "production",
         release: bindings.SENTRY_RELEASE || undefined,
         defaultIntegrations: false,

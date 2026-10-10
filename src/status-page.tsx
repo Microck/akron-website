@@ -691,12 +691,14 @@ export function StatusPage() {
     async function loadStatus() {
       if (isRefreshing) return;
       isRefreshing = true;
+      // Bound the entire refresh so a stalled response cannot block later polls.
+      const signal = AbortSignal.any([abortController.signal, AbortSignal.timeout(15_000)]);
       try {
         const [endpointsResponse, configResponse] = await Promise.all([
           fetch(`${statusApiBase}/endpoints/statuses?page=1&pageSize=1`, {
-            signal: abortController.signal,
+            signal,
           }),
-          fetch(`${statusApiBase}/config`, { signal: abortController.signal }),
+          fetch(`${statusApiBase}/config`, { signal }),
         ]);
 
         if (!endpointsResponse.ok || !configResponse.ok) {
@@ -720,10 +722,10 @@ export function StatusPage() {
               const [detailResponse, uptimeResponse] = await Promise.all([
                 fetch(
                   `${statusApiBase}/endpoints/${endpointKey}/statuses?page=1&pageSize=1`,
-                  { signal: abortController.signal },
+                  { signal },
                 ),
                 fetch(`${statusApiBase}/endpoints/${endpointKey}/uptimes/30d`, {
-                  signal: abortController.signal,
+                  signal,
                 }),
               ]);
 
