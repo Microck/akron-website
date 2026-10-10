@@ -684,7 +684,7 @@ export function StatusPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const abortController = new AbortController();
+    let abortController: AbortController | undefined;
     const reporter = createOutageReporter(captureStatusError);
     let isRefreshing = false;
 
@@ -692,7 +692,12 @@ export function StatusPage() {
       if (isRefreshing) return;
       isRefreshing = true;
       // Bound the entire refresh so a stalled response cannot block later polls.
-      const signal = AbortSignal.any([abortController.signal, AbortSignal.timeout(15_000)]);
+      const refreshController = new AbortController();
+      abortController = refreshController;
+      const { signal } = refreshController;
+      const timeout = window.setTimeout(() => {
+        refreshController.abort(new DOMException("The status service timed out.", "TimeoutError"));
+      }, 15_000);
       try {
         const [endpointsResponse, configResponse] = await Promise.all([
           fetch(`${statusApiBase}/endpoints/statuses?page=1&pageSize=1`, {
@@ -775,6 +780,9 @@ export function StatusPage() {
             : "The status service could not be reached.",
         );
       } finally {
+        window.clearTimeout(timeout);
+        // Promise.all can reject while sibling requests are still pending.
+        refreshController.abort();
         isRefreshing = false;
       }
     }
@@ -784,7 +792,7 @@ export function StatusPage() {
 
     return () => {
       window.clearInterval(refreshTimer);
-      abortController.abort();
+      abortController?.abort();
     };
   }, []);
 

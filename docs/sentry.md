@@ -48,8 +48,9 @@ error callbacks. `AppErrorBoundary` supplies a reload fallback; the root reports
 the error once. The status page explicitly reports both current-status and
 history failures because those errors are otherwise handled by the UI. It
 reports once per phase until recovery, ignores cancellation/offline failures,
-and prevents overlapping polls. A service being down in valid Gatus data is
-not itself an application error.
+and prevents overlapping polls. Each refresh has a 15-second deadline; finishing
+or unmounting cancels any remaining requests. A service being down in valid
+Gatus data is not itself an application error.
 
 ## Status API Worker
 
