@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { validConfig, validEndpoints, validHistory } from "./status-data";
+import { parseUptime, validConfig, validEndpoints, validHistory } from "./status-data";
 import { captureStatusError } from "./instrument";
 import { createOutageReporter, isAbortError } from "../observability/privacy.js";
 
@@ -752,9 +752,9 @@ export function StatusPage() {
               const detail = (await detailResponse.json()) as StatusEndpoint & {
                 events?: readonly StatusEvent[];
               };
-              const uptime = Number(await uptimeResponse.text());
+              const uptime = parseUptime(await uptimeResponse.text());
 
-              if (!validHistory(detail) || !Number.isFinite(uptime) || uptime < 0 || uptime > 1) {
+              if (!validHistory(detail) || uptime === null) {
                 throw new StatusRequestError("Status history returned invalid data.", "invalid_data");
               }
 

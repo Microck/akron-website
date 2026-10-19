@@ -28,3 +28,9 @@ export function validHistory(value: unknown): boolean {
       record(event) && timestamp(event.timestamp) &&
       typeof event.type === "string" && ["START", "HEALTHY", "UNHEALTHY"].includes(event.type))));
 }
+
+export function parseUptime(raw: string): number | null {
+  if (raw.trim() === "") return null;
+  const value = Number(raw);
+  return Number.isFinite(value) && value >= 0 && value <= 1 ? value : null;
+}
