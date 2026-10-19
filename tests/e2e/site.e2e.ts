@@ -14,10 +14,10 @@ for (const width of [1280, 390]) {
   });
 }
 
-for (const mode of ["healthy", "degraded", "history-failure", "blank-uptime", "current-failure", "invalid-current"] as const) {
+for (const mode of ["healthy", "degraded", "network-outage", "history-failure", "blank-uptime", "current-failure", "invalid-current"] as const) {
   test(`status handles ${mode}`, async ({ app, browser, screen }) => {
     const timestamp = new Date().toISOString();
-    const endpoint = { name: "Website", group: "Core", key: "core_website", results: [{ success: mode !== "degraded", timestamp, duration: 25_000_000, status: mode === "degraded" ? 500 : 200 }] };
+    const endpoint = { name: "Website", group: "Core", key: "core_website", results: [{ success: mode !== "degraded" && mode !== "network-outage", timestamp, duration: 25_000_000, ...(mode === "network-outage" ? {} : { status: mode === "degraded" ? 500 : 200 }) }] };
     await browser.route("**/status-api/**", async (route) => {
       const path = new URL(route.request.url).pathname;
       if (path.endsWith("/config")) return route.fulfill({ json: { announcements: [{ timestamp, type: "information", message: "Scheduled test notice" }, { timestamp, type: "operational", message: "Resolved test incident", archived: true }] } });
@@ -34,7 +34,7 @@ for (const mode of ["healthy", "degraded", "history-failure", "blank-uptime", "c
       await expect(screen.getByRole("heading", "Current data could not be refreshed")).toBeVisible();
       await expect(screen.getByRole("link", "Akron home")).toBeVisible();
     } else {
-      await expect(screen.getByRole("heading", mode === "degraded" ? "Some monitored systems are degraded" : "All monitored systems are operational")).toBeVisible();
+      await expect(screen.getByRole("heading", (mode === "degraded" || mode === "network-outage") ? "Some monitored systems are degraded" : "All monitored systems are operational")).toBeVisible();
       await expect(screen.getByRole("heading", "Website")).toBeVisible();
       await expect(screen.getByRole("heading", "Scheduled test notice")).toBeVisible();
       await expect(screen.getByText("Resolved test incident")).toBeVisible();

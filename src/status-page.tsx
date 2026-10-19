@@ -19,7 +19,7 @@ export type StatusResult = Readonly<{
   success: boolean;
   timestamp: string;
   duration: number;
-  status: number;
+  status?: number;
   conditionResults?: readonly ConditionResult[];
 }>;
 

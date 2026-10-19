@@ -24,3 +24,9 @@ test("uptime rejects blank bodies without rejecting a real zero", () => {
   expect(parseUptime(" 0.99\n")).toBe(0.99);
   expect(parseUptime("1")).toBe(1);
 });
+
+test("status-less network failures remain valid while malformed statuses fail", () => {
+  const failed = { success: false, timestamp, duration: 1 };
+  expect(validEndpoints([{ ...endpoint, results: [failed] }])).toBe(true);
+  for (const status of [null, "500", NaN]) expect(validEndpoints([{ ...endpoint, results: [{ ...failed, status }] }])).toBe(false);
+});

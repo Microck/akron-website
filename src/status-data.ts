@@ -12,8 +12,8 @@ export function validEndpoints(value: unknown): boolean {
     Array.isArray(endpoint.results) && endpoint.results.every((result: unknown) =>
       record(result) && typeof result.success === "boolean" &&
       timestamp(result.timestamp) && typeof result.duration === "number" &&
-      Number.isFinite(result.duration) && typeof result.status === "number" &&
-      Number.isFinite(result.status)));
+      Number.isFinite(result.duration) && (result.status === undefined ||
+      (typeof result.status === "number" && Number.isFinite(result.status)))));
 }
 export function validConfig(value: unknown): boolean {
   return record(value) && (value.announcements === undefined ||
