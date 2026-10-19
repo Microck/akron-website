@@ -308,3 +308,11 @@ describe("nested uptime tooltips", () => {
     expect(styles).toContain(".status-hourly-bar:focus");
   });
 });
+
+test("latest status keeps last result on equal timestamps without mutating input", () => {
+  const first = { success: true, timestamp: "2026-10-19T12:00:00Z", duration: 1, status: 200 };
+  const last = { ...first, success: false, status: 500 };
+  const results = Object.freeze([first, last]);
+  expect(getOverallStatus([{ ...endpoint(), results }])).toBe("degraded");
+  expect(results).toEqual([first, last]);
+});

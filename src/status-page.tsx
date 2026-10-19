@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { validConfig, validEndpoints, validHistory } from "./status-data";
 import { captureStatusError } from "./instrument";
 import { createOutageReporter, isAbortError } from "../observability/privacy.js";
 
@@ -74,15 +75,18 @@ export type OverallStatus = "degraded" | "operational" | "unknown";
 
 const statusApiBase = "/status-api";
 
-function sortResultsChronologically(results: readonly StatusResult[]) {
-  return [...results].sort(
-    (left, right) =>
-      new Date(left.timestamp).getTime() - new Date(right.timestamp).getTime(),
-  );
-}
-
 function getLatestResult(results: readonly StatusResult[]) {
-  return sortResultsChronologically(results).at(-1);
+  let latest: StatusResult | undefined;
+  let latestTimestamp = -Infinity;
+  for (const result of results) {
+    const timestamp = new Date(result.timestamp).getTime();
+    // Match stable sort's last-entry behavior when timestamps are equal.
+    if (timestamp >= latestTimestamp) {
+      latest = result;
+      latestTimestamp = timestamp;
+    }
+  }
+  return latest;
 }
 
 export function getOverallStatus(
@@ -130,13 +134,15 @@ export function formatUptimePercentage(uptime: number) {
     : `${percentage.toFixed(2)}%`;
 }
 
-export function formatUptimeDate(date: string) {
-  return new Intl.DateTimeFormat("en-US", {
+const uptimeDateFormatter = new Intl.DateTimeFormat("en-US", {
     day: "numeric",
     month: "long",
     year: "numeric",
     timeZone: "UTC",
-  }).format(new Date(`${date}T00:00:00Z`));
+});
+
+export function formatUptimeDate(date: string) {
+  return uptimeDateFormatter.format(new Date(`${date}T00:00:00Z`));
 }
 
 export function getAdjacentHourIndex({
@@ -715,6 +721,10 @@ export function StatusPage() {
           (await endpointsResponse.json()) as readonly StatusEndpoint[];
         const config = (await configResponse.json()) as StatusConfig;
 
+        if (!validEndpoints(nextEndpoints) || !validConfig(config)) {
+          throw new StatusRequestError("Status service returned invalid data.", "invalid_data");
+        }
+
         setEndpoints(nextEndpoints);
         setAnnouncements(config.announcements ?? []);
         setErrorMessage(null);
@@ -744,7 +754,7 @@ export function StatusPage() {
               };
               const uptime = Number(await uptimeResponse.text());
 
-              if (!Number.isFinite(uptime) || uptime < 0 || uptime > 1) {
+              if (!validHistory(detail) || !Number.isFinite(uptime) || uptime < 0 || uptime > 1) {
                 throw new StatusRequestError("Status history returned invalid data.", "invalid_data");
               }
 

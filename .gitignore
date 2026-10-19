@@ -10,3 +10,4 @@ verification
 .DS_Store
 .vercel
 .residue
+.e2e/
