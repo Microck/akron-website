@@ -30,3 +30,12 @@ test("status-less network failures remain valid while malformed statuses fail", 
   expect(validEndpoints([{ ...endpoint, results: [failed] }])).toBe(true);
   for (const status of [null, "500", NaN]) expect(validEndpoints([{ ...endpoint, results: [{ ...failed, status }] }])).toBe(false);
 });
+
+test("timestamps require explicit zones and real calendar dates", () => {
+  for (const timestamp of ["1", "Jan 1 2026", "2026-01-01T12:00:00", "2026-02-29T12:00:00Z", "2026-04-31T12:00:00Z", "2026-01-01T24:00:00Z"]) {
+    expect(validHistory({events:[{timestamp,type:"START"}]})).toBe(false);
+  }
+  for (const timestamp of ["2024-02-29T12:00:00Z", "2026-01-01T12:00:00.123456789+02:00", "0001-01-01T00:00:00Z"]) {
+    expect(validHistory({events:[{timestamp,type:"START"}]})).toBe(true);
+  }
+});
